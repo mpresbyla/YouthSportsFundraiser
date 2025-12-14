@@ -12,7 +12,7 @@ import FundraiserPreview from "./pages/FundraiserPreview";
 import Dashboard from "./pages/Dashboard";
 import TeamDashboard from "./pages/TeamDashboard";
 import CreateFundraiser from "./pages/CreateFundraiser";
-import CreateLeague from "./pages/CreateLeague";
+import LeagueCreate from "./pages/LeagueCreate";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
@@ -22,7 +22,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
-      <Route path="/create-league" component={CreateLeague} />
+      <Route path="/leagues/create" component={LeagueCreate} />
       <Route path="/league/:id" component={LeagueDetail} />
       <Route path="/team/:id" component={TeamDetail} />
       <Route path="/fundraiser/:id" component={FundraiserDetail} />

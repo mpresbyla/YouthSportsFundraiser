@@ -1,4 +1,4 @@
-import { eq, and, or, isNull } from "drizzle-orm";
+import { eq, and, or, isNull, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, 
@@ -124,6 +124,52 @@ export async function getUserById(userId: number) {
 
   const result = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getUserStats(userId: number) {
+  const db = await getDb();
+  if (!db) return { teamsManaged: 0, activeFundraisers: 0, totalRaised: 0 };
+
+  // Count teams managed
+  const teamsResult = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(userRoles)
+    .where(and(
+      eq(userRoles.userId, userId),
+      eq(userRoles.role, 'team_manager')
+    ));
+  const teamsManaged = Number(teamsResult[0]?.count) || 0;
+
+  // Count active fundraisers for managed teams
+  const fundraisersResult = await db
+    .select({ count: sql<number>`COUNT(DISTINCT ${fundraisers.id})` })
+    .from(fundraisers)
+    .leftJoin(teams, eq(fundraisers.teamId, teams.id))
+    .leftJoin(userRoles, eq(userRoles.teamId, teams.id))
+    .where(and(
+      eq(userRoles.userId, userId),
+      eq(userRoles.role, 'team_manager'),
+      eq(fundraisers.status, 'active')
+    ));
+  const activeFundraisers = Number(fundraisersResult[0]?.count) || 0;
+
+  // Calculate total raised across all managed fundraisers
+  const raisedResult = await db
+    .select({ total: sql<number>`COALESCE(SUM(${fundraisers.totalAmountCharged}), 0)` })
+    .from(fundraisers)
+    .leftJoin(teams, eq(fundraisers.teamId, teams.id))
+    .leftJoin(userRoles, eq(userRoles.teamId, teams.id))
+    .where(and(
+      eq(userRoles.userId, userId),
+      eq(userRoles.role, 'team_manager')
+    ));
+  const totalRaised = Number(raisedResult[0]?.total) || 0;
+
+  return {
+    teamsManaged,
+    activeFundraisers,
+    totalRaised: totalRaised / 100, // Convert cents to dollars
+  };
 }
 
 // ============================================================================
@@ -254,6 +300,40 @@ export async function getTeamsByLeague(leagueId: number): Promise<Team[]> {
   if (!db) return [];
 
   return db.select().from(teams).where(eq(teams.leagueId, leagueId));
+}
+
+export async function getTeamsByManager(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Get teams where user has manager role
+  const managedTeams = await db
+    .select({
+      id: teams.id,
+      name: teams.name,
+      description: teams.description,
+      logoUrl: teams.logoUrl,
+      leagueId: teams.leagueId,
+      createdAt: teams.createdAt,
+      league: leagues,
+      _count: sql<number>`(
+        SELECT COUNT(*) 
+        FROM ${fundraisers} 
+        WHERE ${fundraisers.teamId} = ${teams.id}
+      )`.as('fundraiserCount')
+    })
+    .from(teams)
+    .leftJoin(leagues, eq(teams.leagueId, leagues.id))
+    .leftJoin(userRoles, eq(userRoles.teamId, teams.id))
+    .where(and(
+      eq(userRoles.userId, userId),
+      eq(userRoles.role, 'team_manager')
+    ));
+
+  return managedTeams.map(t => ({
+    ...t,
+    _count: { fundraisers: Number(t._count) || 0 }
+  }));
 }
 
 export async function getTeamById(teamId: number): Promise<Team | undefined> {
@@ -439,6 +519,32 @@ export async function getChargesByFundraiser(fundraiserId: number): Promise<Char
   if (!db) return [];
 
   return db.select().from(charges).where(eq(charges.fundraiserId, fundraiserId));
+}
+
+export async function getChargesByUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Get user's email
+  const user = await getUserById(userId);
+  if (!user?.email) return [];
+
+  // Get charges for pledges made by this user's email
+  const userCharges = await db
+    .select({
+      id: charges.id,
+      amount: charges.grossAmount,
+      status: charges.status,
+      createdAt: charges.createdAt,
+      fundraiser: fundraisers,
+    })
+    .from(charges)
+    .leftJoin(pledges, eq(charges.pledgeId, pledges.id))
+    .leftJoin(fundraisers, eq(charges.fundraiserId, fundraisers.id))
+    .where(eq(pledges.donorEmail, user.email))
+    .orderBy(sql`${charges.createdAt} DESC`);
+
+  return userCharges;
 }
 
 export async function createCharge(data: {

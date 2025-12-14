@@ -86,14 +86,16 @@ const authRouter = router({
         },
       };
     }),
-  
-  logout: publicProcedure.mutation(({ ctx }) => {
+   logout: protectedProcedure.mutation(({ ctx }) => {
     const cookieOptions = getSessionCookieOptions(ctx.req);
     ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
     return { success: true } as const;
   }),
-});
 
+  getMyStats: protectedProcedure.query(async ({ ctx }) => {
+    return db.getUserStats(ctx.user.id);
+  }),
+});
 // ============================================================================
 // League Router
 // ============================================================================
@@ -161,6 +163,12 @@ const leagueRouter = router({
 // ============================================================================
 
 const teamRouter = router({
+  getMyTeams: protectedProcedure
+    .query(async ({ ctx }) => {
+      const teams = await db.getTeamsByManager(ctx.user.id);
+      return teams;
+    }),
+
   getById: publicProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
@@ -937,6 +945,11 @@ const chargeRouter = router({
 
       return db.getChargesByFundraiser(input.fundraiserId);
     }),
+
+  getMyCharges: protectedProcedure
+    .query(async ({ ctx }) => {
+      return db.getChargesByUser(ctx.user.id);
+    }),
 });
 
 // ============================================================================
@@ -1038,6 +1051,79 @@ const stripeRouter = router({
       });
 
       return status;
+    }),
+
+  createPaymentIntent: publicProcedure
+    .input(
+      z.object({
+        fundraiserId: z.number(),
+        amount: z.number().positive(),
+        donorName: z.string(),
+        donorEmail: z.string().email(),
+        donorPhone: z.string().optional(),
+        metadata: z.record(z.string(), z.any()).optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const fundraiser = await db.getFundraiserById(input.fundraiserId);
+      if (!fundraiser) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Fundraiser not found" });
+      }
+
+      if (fundraiser.status !== "active") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Fundraiser is not active" });
+      }
+
+      const team = await db.getTeamById(fundraiser.teamId);
+      if (!team?.stripeAccountId || !team.stripeChargesEnabled) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Team payment processing not configured" });
+      }
+
+      const league = await db.getLeagueById(team.leagueId);
+      const feePercentage = team.feePercentage ?? league?.defaultFeePercentage ?? 5;
+      const platformFee = Math.round((input.amount * feePercentage) / 100);
+
+      // Create payment intent
+      const paymentIntent = await stripeHelpers.createDirectPaymentIntent({
+        amount: input.amount,
+        connectedAccountId: team.stripeAccountId,
+        platformFeeAmount: platformFee,
+        donorEmail: input.donorEmail,
+        donorName: input.donorName,
+        fundraiserId: input.fundraiserId,
+        description: `Donation to ${fundraiser.title}`,
+      });
+
+      // Create pledge record
+      const pledgeResult = await db.createPledge({
+        fundraiserId: input.fundraiserId,
+        donorName: input.donorName,
+        donorEmail: input.donorEmail,
+        donorPhone: input.donorPhone,
+        pledgeType: "direct_donation",
+        baseAmount: input.amount,
+        finalAmount: input.amount,
+        platformFee: platformFee,
+        donorTip: 0,
+        stripePaymentIntentId: paymentIntent.id,
+        status: "charged",
+      });
+      const pledgeId = pledgeResult[0].insertId;
+
+      // Update pledge with chargedAt timestamp
+      await db.updatePledge(pledgeId, {
+        chargedAt: new Date(),
+      });
+
+      // Update fundraiser totals
+      await db.updateFundraiser(input.fundraiserId, {
+        totalAmountCharged: (fundraiser.totalAmountCharged || 0) + input.amount,
+      });
+
+      return {
+        success: true,
+        paymentIntentId: paymentIntent.id,
+      };
     }),
 });
 
