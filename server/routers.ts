@@ -754,6 +754,118 @@ const chargeRouter = router({
 // Main App Router
 // ============================================================================
 
+// ============================================================================
+// Stripe Router
+// ============================================================================
+
+const stripeRouter = router({
+  createConnectAccount: protectedProcedure
+    .input(z.object({ teamId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const canManage = await db.canManageTeam(ctx.user.id, input.teamId);
+      if (!canManage) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      const team = await db.getTeamById(input.teamId);
+      if (!team) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Team not found" });
+      }
+
+      // Create Stripe Connect account
+      const account = await stripeHelpers.createConnectAccount({
+        email: ctx.user.email || "",
+        teamName: team.name,
+        metadata: {
+          team_id: input.teamId.toString(),
+          league_id: team.leagueId.toString(),
+        },
+      });
+
+      // Save account ID
+      await db.updateTeamStripeAccount(input.teamId, {
+        stripeAccountId: account.id,
+      });
+
+      await db.logAudit({
+        userId: ctx.user.id,
+        action: "team.stripe_account_created",
+        entityType: "team",
+        entityId: input.teamId,
+        metadata: { stripeAccountId: account.id },
+      });
+
+      return { accountId: account.id };
+    }),
+
+  createOnboardingLink: protectedProcedure
+    .input(z.object({ teamId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const canManage = await db.canManageTeam(ctx.user.id, input.teamId);
+      if (!canManage) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      const team = await db.getTeamById(input.teamId);
+      if (!team?.stripeAccountId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "No Stripe account found" });
+      }
+
+      const link = await stripeHelpers.createAccountLink({
+        accountId: team.stripeAccountId,
+        refreshUrl: `${process.env.VITE_APP_URL || 'http://localhost:3000'}/team/${input.teamId}/dashboard`,
+        returnUrl: `${process.env.VITE_APP_URL || 'http://localhost:3000'}/team/${input.teamId}/dashboard`,
+      });
+
+      return { url: link.url };
+    }),
+
+  getAccountStatus: protectedProcedure
+    .input(z.object({ teamId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const canManage = await db.canManageTeam(ctx.user.id, input.teamId);
+      if (!canManage) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      const team = await db.getTeamById(input.teamId);
+      if (!team?.stripeAccountId) {
+        return { configured: false };
+      }
+
+      const account = await stripeHelpers.getAccountDetails(team.stripeAccountId);
+      const status = {
+        configured: true,
+        detailsSubmitted: account.details_submitted || false,
+        chargesEnabled: account.charges_enabled || false,
+        payoutsEnabled: account.payouts_enabled || false,
+      };
+
+      // Update team record
+      await db.updateTeamStripeAccount(input.teamId, {
+        stripeOnboardingCompleted: status.detailsSubmitted,
+        stripeChargesEnabled: status.chargesEnabled,
+        stripePayoutsEnabled: status.payoutsEnabled,
+      });
+
+      return status;
+    }),
+});
+
+// ============================================================================
+// Role Router
+// ============================================================================
+
+const roleRouter = router({
+  getUserRole: protectedProcedure
+    .input(z.object({ teamId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const roles = await db.getUserRoles(ctx.user.id);
+      const teamRole = roles.find(r => r.teamId === input.teamId);
+      return teamRole || null;
+    }),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: authRouter,
@@ -762,6 +874,8 @@ export const appRouter = router({
   fundraiser: fundraiserRouter,
   pledge: pledgeRouter,
   charge: chargeRouter,
+  stripe: stripeRouter,
+  role: roleRouter,
 });
 
 export type AppRouter = typeof appRouter;

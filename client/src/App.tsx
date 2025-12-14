@@ -9,6 +9,7 @@ import LeagueDetail from "./pages/LeagueDetail";
 import TeamDetail from "./pages/TeamDetail";
 import FundraiserDetail from "./pages/FundraiserDetail";
 import Dashboard from "./pages/Dashboard";
+import TeamDashboard from "./pages/TeamDashboard";
 
 function Router() {
   return (
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/team/:id" component={TeamDetail} />
       <Route path="/fundraiser/:id" component={FundraiserDetail} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/team/:id/dashboard" component={TeamDashboard} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

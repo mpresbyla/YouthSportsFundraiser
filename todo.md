@@ -95,3 +95,30 @@ The core platform is functional with:
 - Implement email notifications
 - Add reporting and CSV export
 - Polish UI/UX and add more dashboard features
+
+## New Features - Making It Functional
+
+### Stripe Payment Integration
+- [ ] Integrate Stripe Elements on fundraiser detail page
+- [ ] Implement real payment processing for direct donations
+- [ ] Add payment method authorization for micro-pledges
+- [ ] Test complete payment flow end-to-end
+
+### Team Management Dashboard
+- [x] Build comprehensive team dashboard with all features
+- [x] Add fundraiser creation wizard
+- [x] Implement stats entry interface
+- [x] Add charge triggering functionality
+- [ ] Show pledge and payment reports
+
+### Reporting & Analytics
+- [ ] Add CSV export for pledges
+- [ ] Add CSV export for charges
+- [ ] Build fundraiser performance metrics
+- [ ] Create donor list view
+
+### UI/UX Polish
+- [ ] Improve navigation and layout
+- [ ] Add loading states and error handling
+- [ ] Implement responsive design
+- [ ] Add confirmation dialogs for critical actions
