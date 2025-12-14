@@ -1,9 +1,9 @@
 [build]
-  # Build command
-  command = "cd client && npm install && npm run build"
+  # Build command (this is a monorepo with single package.json at root)
+  command = "pnpm install && pnpm run build"
   
   # Publish directory (relative to repository root)
-  publish = "client/dist"
+  publish = "dist/public"
   
   # Node version
   environment = { NODE_VERSION = "18" }

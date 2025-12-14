@@ -323,3 +323,11 @@
 - [x] Create comprehensive NETLIFY_DEPLOYMENT.md guide
 - [x] Document repository access methods (gh CLI for private repos)
 - [x] Update deployment instructions with correct repository URL
+
+
+## Netlify Build Failure (RESOLVED)
+- [x] Investigate npm install error "Cannot read properties of null (reading 'matches')"
+- [x] Identified issue: Incorrect build command (tried to cd into client/ which has no package.json)
+- [x] Fix: This is a monorepo with single package.json at root
+- [x] Update netlify.toml: command="pnpm install && pnpm run build", publish="dist/public"
+- [x] Test build locally - SUCCESS (built in 5.53s, output to dist/public/)
