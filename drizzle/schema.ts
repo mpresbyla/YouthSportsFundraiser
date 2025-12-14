@@ -1,18 +1,39 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, decimal } from "drizzle-orm/mysql-core";
+import { pgTable, pgEnum, serial, integer, text, timestamp, varchar, boolean, numeric } from "drizzle-orm/pg-core";
+
+// Enum definitions
+
+import { pgTable, pgEnum, serial, integer, text, timestamp, varchar, boolean, numeric } from "drizzle-orm/pg-core";
+
+// Enum definitions
+export const roleEnum = pgEnum("role", ["user", "admin"]);
+export const fundraiserTypeEnum = pgEnum("fundraiserType", ["direct_donation", "micro_fundraiser"]);
+export const statusEnum = pgEnum("status", ["draft", "active", "paused", "completed", "cancelled"]);
+export const pledgeTypeEnum = pgEnum("pledgeType", ["direct_donation", "micro_pledge"]);
+export const fundraiserTemplateEnum = pgEnum("fundraiserTemplate", [
+  "direct_donation",
+  "micro_fundraiser",
+  "raffle",
+  "squares",
+  "challenge",
+  "team_vs_team",
+  "calendar",
+  "donation_matching"
+]);
+
 
 /**
  * Core user table backing auth flow.
  */
-export const users = mysqlTable("users", {
-  id: int("id").autoincrement().primaryKey(),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
   openId: varchar("openId", { length: 64 }).unique(), // Optional for email/password auth
   name: text("name"),
   email: varchar("email", { length: 320 }).notNull().unique(), // Now required and unique
   passwordHash: varchar("passwordHash", { length: 255 }), // For email/password auth
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: roleEnum("role").default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
@@ -22,15 +43,15 @@ export type InsertUser = typeof users.$inferInsert;
 /**
  * Leagues - top-level organizations that contain teams
  */
-export const leagues = mysqlTable("leagues", {
-  id: int("id").autoincrement().primaryKey(),
+export const leagues = pgTable("leagues", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   logoUrl: text("logoUrl"),
-  defaultFeePercentage: int("defaultFeePercentage").default(5).notNull(), // Platform fee percentage (stored as integer, e.g., 5 = 5%)
+  defaultFeePercentage: integer("defaultFeePercentage").default(5).notNull(), // Platform fee percentage (stored as integer, e.g., 5 = 5%)
   allowedFundraiserTypes: text("allowedFundraiserTypes").notNull(), // Comma-separated list
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type League = typeof leagues.$inferSelect;
@@ -39,9 +60,9 @@ export type InsertLeague = typeof leagues.$inferInsert;
 /**
  * Teams - belong to leagues, run fundraisers
  */
-export const teams = mysqlTable("teams", {
-  id: int("id").autoincrement().primaryKey(),
-  leagueId: int("leagueId").notNull(),
+export const teams = pgTable("teams", {
+  id: serial("id").primaryKey(),
+  leagueId: integer("leagueId").notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   logoUrl: text("logoUrl"),
@@ -49,9 +70,9 @@ export const teams = mysqlTable("teams", {
   stripeOnboardingCompleted: boolean("stripeOnboardingCompleted").default(false).notNull(),
   stripeChargesEnabled: boolean("stripeChargesEnabled").default(false).notNull(),
   stripePayoutsEnabled: boolean("stripePayoutsEnabled").default(false).notNull(),
-  feePercentage: int("feePercentage"), // Override league default if set (stored as integer)
+  feePercentage: integer("feePercentage"), // Override league default if set (stored as integer)
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type Team = typeof teams.$inferSelect;
@@ -60,13 +81,13 @@ export type InsertTeam = typeof teams.$inferInsert;
 /**
  * User roles - defines permissions for users within leagues/teams
  */
-export const userRoles = mysqlTable("userRoles", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  leagueId: int("leagueId"), // Null for team-only roles
-  teamId: int("teamId"), // Null for league-only roles
-  role: mysqlEnum("role", ["league_admin", "team_manager"]).notNull(),
-  grantedBy: int("grantedBy"), // User ID who granted this role
+export const userRoles = pgTable("userRoles", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
+  leagueId: integer("leagueId"), // Null for team-only roles
+  teamId: integer("teamId"), // Null for league-only roles
+  role: roleEnum("role").notNull(),
+  grantedBy: integer("grantedBy"), // User ID who granted this role
   grantedAt: timestamp("grantedAt").defaultNow().notNull(),
   revokedAt: timestamp("revokedAt"),
 });
@@ -77,34 +98,25 @@ export type InsertUserRole = typeof userRoles.$inferInsert;
 /**
  * Fundraisers - campaigns run by teams
  */
-export const fundraisers = mysqlTable("fundraisers", {
-  id: int("id").autoincrement().primaryKey(),
-  teamId: int("teamId").notNull(),
+export const fundraisers = pgTable("fundraisers", {
+  id: serial("id").primaryKey(),
+  teamId: integer("teamId").notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
-  fundraiserType: mysqlEnum("fundraiserType", ["direct_donation", "micro_fundraiser"]).notNull(),
-  fundraiserTemplate: mysqlEnum("fundraiserTemplate", [
-    "direct_donation",
-    "micro_fundraiser",
-    "raffle",
-    "squares",
-    "challenge",
-    "team_vs_team",
-    "calendar",
-    "donation_matching"
-  ]).default("direct_donation").notNull(),
-  status: mysqlEnum("status", ["draft", "active", "paused", "completed", "cancelled"]).default("draft").notNull(),
+  fundraiserType: fundraiserTypeEnum("fundraiserType").notNull(),
+  fundraiserTemplate: fundraiserTemplateEnum("fundraiserTemplate").default("direct_donation").notNull(),
+  status: statusEnum("status").default("draft").notNull(),
   startDate: timestamp("startDate"),
   endDate: timestamp("endDate"),
-  goalAmount: int("goalAmount"), // Goal in cents
+  goalAmount: integer("goalAmount"), // Goal in cents
   // Micro-fundraiser specific config stored as JSON
   config: text("config"), // JSON: { metricName, metricUnit, defaultPledgeAmount, defaultCap, estimatedRange, eventDate }
   publishedAt: timestamp("publishedAt"),
   completedAt: timestamp("completedAt"),
-  totalAmountPledged: int("totalAmountPledged").default(0).notNull(), // Total in cents
-  totalAmountCharged: int("totalAmountCharged").default(0).notNull(), // Total in cents
+  totalAmountPledged: integer("totalAmountPledged").default(0).notNull(), // Total in cents
+  totalAmountCharged: integer("totalAmountCharged").default(0).notNull(), // Total in cents
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type Fundraiser = typeof fundraisers.$inferSelect;
@@ -113,27 +125,27 @@ export type InsertFundraiser = typeof fundraisers.$inferInsert;
 /**
  * Pledges - donor commitments (immediate for direct donations, deferred for micro-fundraisers)
  */
-export const pledges = mysqlTable("pledges", {
-  id: int("id").autoincrement().primaryKey(),
-  fundraiserId: int("fundraiserId").notNull(),
+export const pledges = pgTable("pledges", {
+  id: serial("id").primaryKey(),
+  fundraiserId: integer("fundraiserId").notNull(),
   donorName: varchar("donorName", { length: 255 }).notNull(),
   donorEmail: varchar("donorEmail", { length: 320 }).notNull(),
   donorPhone: varchar("donorPhone", { length: 50 }),
-  pledgeType: mysqlEnum("pledgeType", ["direct_donation", "micro_pledge"]).notNull(),
+  pledgeType: pledgeTypeEnum("pledgeType").notNull(),
   
   // For direct donations: final amount
   // For micro-pledges: amount per unit
-  baseAmount: int("baseAmount").notNull(), // In cents
+  baseAmount: integer("baseAmount").notNull(), // In cents
   
   // For micro-pledges only
-  capAmount: int("capAmount"), // Maximum charge in cents
-  multiplier: int("multiplier"), // Final metric value (e.g., 12 runs)
-  calculatedAmount: int("calculatedAmount"), // baseAmount * multiplier (capped)
+  capAmount: integer("capAmount"), // Maximum charge in cents
+  multiplier: integer("multiplier"), // Final metric value (e.g., 12 runs)
+  calculatedAmount: integer("calculatedAmount"), // baseAmount * multiplier (capped)
   
   // Final amount including any tips
-  finalAmount: int("finalAmount").notNull(), // In cents
-  platformFee: int("platformFee").notNull(), // In cents
-  donorTip: int("donorTip").default(0).notNull(), // In cents
+  finalAmount: integer("finalAmount").notNull(), // In cents
+  platformFee: integer("platformFee").notNull(), // In cents
+  donorTip: integer("donorTip").default(0).notNull(), // In cents
   
   // Stripe references
   stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
@@ -141,13 +153,13 @@ export const pledges = mysqlTable("pledges", {
   stripePaymentMethodId: varchar("stripePaymentMethodId", { length: 255 }), // Saved payment method
   stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }), // For actual charge
   
-  status: mysqlEnum("status", ["pending_authorization", "authorized", "charged", "failed", "refunded"]).notNull(),
+  status: statusEnum("status").notNull(),
   authorizedAt: timestamp("authorizedAt"),
   chargedAt: timestamp("chargedAt"),
   refundedAt: timestamp("refundedAt"),
   
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type Pledge = typeof pledges.$inferSelect;
@@ -156,15 +168,15 @@ export type InsertPledge = typeof pledges.$inferInsert;
 /**
  * Stats entries - performance data for micro-fundraisers
  */
-export const statsEntries = mysqlTable("statsEntries", {
-  id: int("id").autoincrement().primaryKey(),
-  fundraiserId: int("fundraiserId").notNull(),
+export const statsEntries = pgTable("statsEntries", {
+  id: serial("id").primaryKey(),
+  fundraiserId: integer("fundraiserId").notNull(),
   metricName: varchar("metricName", { length: 255 }).notNull(),
-  metricValue: int("metricValue").notNull(), // The actual performance (e.g., 12 runs)
-  enteredBy: int("enteredBy").notNull(), // User ID
+  metricValue: integer("metricValue").notNull(), // The actual performance (e.g., 12 runs)
+  enteredBy: integer("enteredBy").notNull(), // User ID
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type StatsEntry = typeof statsEntries.$inferSelect;
@@ -173,25 +185,25 @@ export type InsertStatsEntry = typeof statsEntries.$inferInsert;
 /**
  * Charges - record of payment attempts
  */
-export const charges = mysqlTable("charges", {
-  id: int("id").autoincrement().primaryKey(),
-  pledgeId: int("pledgeId").notNull(),
-  fundraiserId: int("fundraiserId").notNull(),
-  grossAmount: int("grossAmount").notNull(), // Total charged in cents
-  platformFee: int("platformFee").notNull(), // Platform fee in cents
-  donorTip: int("donorTip").default(0).notNull(), // Donor tip in cents
-  netAmount: int("netAmount").notNull(), // Amount to team in cents
+export const charges = pgTable("charges", {
+  id: serial("id").primaryKey(),
+  pledgeId: integer("pledgeId").notNull(),
+  fundraiserId: integer("fundraiserId").notNull(),
+  grossAmount: integer("grossAmount").notNull(), // Total charged in cents
+  platformFee: integer("platformFee").notNull(), // Platform fee in cents
+  donorTip: integer("donorTip").default(0).notNull(), // Donor tip in cents
+  netAmount: integer("netAmount").notNull(), // Amount to team in cents
   stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
-  status: mysqlEnum("status", ["succeeded", "failed", "refunded"]).notNull(),
+  status: statusEnum("status").notNull(),
   failureCode: varchar("failureCode", { length: 255 }),
   failureMessage: text("failureMessage"),
-  refundAmount: int("refundAmount"), // In cents
+  refundAmount: integer("refundAmount"), // In cents
   refundReason: text("refundReason"),
   succeededAt: timestamp("succeededAt"),
   failedAt: timestamp("failedAt"),
   refundedAt: timestamp("refundedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type Charge = typeof charges.$inferSelect;
@@ -200,12 +212,12 @@ export type InsertCharge = typeof charges.$inferInsert;
 /**
  * Audit logs - track important actions
  */
-export const auditLogs = mysqlTable("auditLogs", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId"),
+export const auditLogs = pgTable("auditLogs", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId"),
   action: varchar("action", { length: 255 }).notNull(),
   entityType: varchar("entityType", { length: 100 }),
-  entityId: int("entityId"),
+  entityId: integer("entityId"),
   metadata: text("metadata"), // JSON
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -216,17 +228,17 @@ export type InsertAuditLog = typeof auditLogs.$inferInsert;
 /**
  * Notifications - email notification queue
  */
-export const notifications = mysqlTable("notifications", {
-  id: int("id").autoincrement().primaryKey(),
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
   recipientEmail: varchar("recipientEmail", { length: 320 }).notNull(),
   subject: varchar("subject", { length: 500 }).notNull(),
   templateName: varchar("templateName", { length: 100 }).notNull(),
   templateData: text("templateData"), // JSON
-  status: mysqlEnum("status", ["pending", "sent", "failed"]).default("pending").notNull(),
+  status: statusEnum("status").default("pending").notNull(),
   sentAt: timestamp("sentAt"),
   failureReason: text("failureReason"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type Notification = typeof notifications.$inferSelect;
@@ -235,16 +247,16 @@ export type InsertNotification = typeof notifications.$inferInsert;
 /**
  * Raffle Items - prizes for raffle fundraisers
  */
-export const raffleItems = mysqlTable("raffleItems", {
-  id: int("id").autoincrement().primaryKey(),
-  fundraiserId: int("fundraiserId").notNull(),
+export const raffleItems = pgTable("raffleItems", {
+  id: serial("id").primaryKey(),
+  fundraiserId: integer("fundraiserId").notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
   imageUrl: varchar("imageUrl", { length: 500 }),
   sponsorName: varchar("sponsorName", { length: 255 }),
   sponsorLogoUrl: varchar("sponsorLogoUrl", { length: 500 }),
-  totalEntries: int("totalEntries").default(0).notNull(),
-  winnerPledgeId: int("winnerPledgeId"),
+  totalEntries: integer("totalEntries").default(0).notNull(),
+  winnerPledgeId: integer("winnerPledgeId"),
   drawnAt: timestamp("drawnAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -255,11 +267,11 @@ export type InsertRaffleItem = typeof raffleItems.$inferInsert;
 /**
  * Raffle Tiers - pricing tiers for raffle entries
  */
-export const raffleTiers = mysqlTable("raffleTiers", {
-  id: int("id").autoincrement().primaryKey(),
-  fundraiserId: int("fundraiserId").notNull(),
-  price: int("price").notNull(), // in cents
-  entries: int("entries").notNull(),
+export const raffleTiers = pgTable("raffleTiers", {
+  id: serial("id").primaryKey(),
+  fundraiserId: integer("fundraiserId").notNull(),
+  price: integer("price").notNull(), // in cents
+  entries: integer("entries").notNull(),
   label: varchar("label", { length: 100 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -270,17 +282,17 @@ export type InsertRaffleTier = typeof raffleTiers.$inferInsert;
 /**
  * Squares Grids - Super Bowl squares and event squares
  */
-export const squaresGrids = mysqlTable("squaresGrids", {
-  id: int("id").autoincrement().primaryKey(),
-  fundraiserId: int("fundraiserId").notNull(),
-  gridSize: int("gridSize").default(100).notNull(), // 10x10 = 100 squares
-  pricePerSquare: int("pricePerSquare").notNull(), // in cents
+export const squaresGrids = pgTable("squaresGrids", {
+  id: serial("id").primaryKey(),
+  fundraiserId: integer("fundraiserId").notNull(),
+  gridSize: integer("gridSize").default(100).notNull(), // 10x10 = 100 squares
+  pricePerSquare: integer("pricePerSquare").notNull(), // in cents
   homeTeam: varchar("homeTeam", { length: 255 }),
   awayTeam: varchar("awayTeam", { length: 255 }),
   eventDate: timestamp("eventDate"),
   homeNumbers: text("homeNumbers"), // JSON array [0,1,2,3,4,5,6,7,8,9]
   awayNumbers: text("awayNumbers"), // JSON array
-  numbersLocked: int("numbersLocked").default(0).notNull(), // boolean as int
+  numbersLocked: integer("numbersLocked").default(0).notNull(), // boolean as int
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -290,11 +302,11 @@ export type InsertSquaresGrid = typeof squaresGrids.$inferInsert;
 /**
  * Squares Purchases - individual square purchases
  */
-export const squaresPurchases = mysqlTable("squaresPurchases", {
-  id: int("id").autoincrement().primaryKey(),
-  gridId: int("gridId").notNull(),
-  pledgeId: int("pledgeId").notNull(),
-  squarePosition: int("squarePosition").notNull(), // 0-99 for 10x10 grid
+export const squaresPurchases = pgTable("squaresPurchases", {
+  id: serial("id").primaryKey(),
+  gridId: integer("gridId").notNull(),
+  pledgeId: integer("pledgeId").notNull(),
+  squarePosition: integer("squarePosition").notNull(), // 0-99 for 10x10 grid
   donorName: varchar("donorName", { length: 255 }),
   purchasedAt: timestamp("purchasedAt").defaultNow().notNull(),
 });
@@ -305,14 +317,14 @@ export type InsertSquaresPurchase = typeof squaresPurchases.$inferInsert;
 /**
  * Squares Payouts - quarter/final payouts for squares
  */
-export const squaresPayouts = mysqlTable("squaresPayouts", {
-  id: int("id").autoincrement().primaryKey(),
-  gridId: int("gridId").notNull(),
-  quarter: int("quarter"), // 1,2,3,4 or NULL for final
-  homeScore: int("homeScore"),
-  awayScore: int("awayScore"),
-  winnerSquareId: int("winnerSquareId"),
-  payoutAmount: int("payoutAmount"), // in cents
+export const squaresPayouts = pgTable("squaresPayouts", {
+  id: serial("id").primaryKey(),
+  gridId: integer("gridId").notNull(),
+  quarter: integer("quarter"), // 1,2,3,4 or NULL for final
+  homeScore: integer("homeScore"),
+  awayScore: integer("awayScore"),
+  winnerSquareId: integer("winnerSquareId"),
+  payoutAmount: integer("payoutAmount"), // in cents
   paidAt: timestamp("paidAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -323,13 +335,13 @@ export type InsertSquaresPayout = typeof squaresPayouts.$inferInsert;
 /**
  * Challenge Goals - milestone-based challenges
  */
-export const challengeGoals = mysqlTable("challengeGoals", {
-  id: int("id").autoincrement().primaryKey(),
-  fundraiserId: int("fundraiserId").notNull(),
-  goalAmount: int("goalAmount").notNull(), // in cents
+export const challengeGoals = pgTable("challengeGoals", {
+  id: serial("id").primaryKey(),
+  fundraiserId: integer("fundraiserId").notNull(),
+  goalAmount: integer("goalAmount").notNull(), // in cents
   challengeDescription: text("challengeDescription").notNull(),
   completedDescription: text("completedDescription"),
-  isCompleted: int("isCompleted").default(0).notNull(), // boolean as int
+  isCompleted: integer("isCompleted").default(0).notNull(), // boolean as int
   completedAt: timestamp("completedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -340,12 +352,12 @@ export type InsertChallengeGoal = typeof challengeGoals.$inferInsert;
 /**
  * Team vs Team Matches - competitive fundraising
  */
-export const teamVsTeamMatches = mysqlTable("teamVsTeamMatches", {
-  id: int("id").autoincrement().primaryKey(),
-  fundraiser1Id: int("fundraiser1Id").notNull(),
-  fundraiser2Id: int("fundraiser2Id").notNull(),
+export const teamVsTeamMatches = pgTable("teamVsTeamMatches", {
+  id: serial("id").primaryKey(),
+  fundraiser1Id: integer("fundraiser1Id").notNull(),
+  fundraiser2Id: integer("fundraiser2Id").notNull(),
   loserChallenge: text("loserChallenge"),
-  winnerId: int("winnerId"),
+  winnerId: integer("winnerId"),
   completedAt: timestamp("completedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -356,12 +368,12 @@ export type InsertTeamVsTeamMatch = typeof teamVsTeamMatches.$inferInsert;
 /**
  * Calendar Dates - pick-a-date fundraisers
  */
-export const calendarDates = mysqlTable("calendarDates", {
-  id: int("id").autoincrement().primaryKey(),
-  fundraiserId: int("fundraiserId").notNull(),
+export const calendarDates = pgTable("calendarDates", {
+  id: serial("id").primaryKey(),
+  fundraiserId: integer("fundraiserId").notNull(),
   dateValue: varchar("dateValue", { length: 10 }).notNull(), // YYYY-MM-DD
-  amount: int("amount").notNull(), // in cents
-  purchaserPledgeId: int("purchaserPledgeId"),
+  amount: integer("amount").notNull(), // in cents
+  purchaserPledgeId: integer("purchaserPledgeId"),
   purchaserName: varchar("purchaserName", { length: 255 }),
   purchasedAt: timestamp("purchasedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -373,14 +385,14 @@ export type InsertCalendarDate = typeof calendarDates.$inferInsert;
 /**
  * Donation Matching - sponsor-matched donations
  */
-export const donationMatching = mysqlTable("donationMatching", {
-  id: int("id").autoincrement().primaryKey(),
-  fundraiserId: int("fundraiserId").notNull(),
+export const donationMatching = pgTable("donationMatching", {
+  id: serial("id").primaryKey(),
+  fundraiserId: integer("fundraiserId").notNull(),
   sponsorName: varchar("sponsorName", { length: 255 }).notNull(),
   sponsorLogoUrl: varchar("sponsorLogoUrl", { length: 500 }),
-  matchAmount: int("matchAmount").notNull(), // max amount to match in cents
-  matchRatio: int("matchRatio").default(100).notNull(), // 100 = 100% match, 50 = 50% match
-  currentMatched: int("currentMatched").default(0).notNull(),
+  matchAmount: integer("matchAmount").notNull(), // max amount to match in cents
+  matchRatio: integer("matchRatio").default(100).notNull(), // 100 = 100% match, 50 = 50% match
+  currentMatched: integer("currentMatched").default(0).notNull(),
   expiresAt: timestamp("expiresAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

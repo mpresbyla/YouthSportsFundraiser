@@ -37,7 +37,7 @@ export async function registerUser(email: string, password: string, name?: strin
     lastSignedIn: new Date(),
   });
 
-  const userId = result[0].id;
+  const userId = result[0].insertId;
 
   // Fetch and return the created user
   const user = await db

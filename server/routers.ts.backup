@@ -130,7 +130,7 @@ const leagueRouter = router({
       // They will automatically become the league admin
 
       const result = await db.createLeague(input);
-      const leagueId = result[0].id;
+      const leagueId = result[0].insertId;
       
       // Assign creator as league admin
       await db.assignLeagueAdmin(leagueId, ctx.user.id);
@@ -197,7 +197,7 @@ const teamRouter = router({
       }
 
       const result = await db.createTeam(input);
-      const teamId = result[0].id;
+      const teamId = result[0].insertId;
 
       await db.logAudit({
         userId: ctx.user.id,
@@ -343,7 +343,7 @@ const fundraiserRouter = router({
       }
 
       const result = await db.createFundraiser(input);
-      const fundraiserId = result[0].id;
+      const fundraiserId = result[0].insertId;
 
       await db.logAudit({
         userId: ctx.user.id,
@@ -603,7 +603,7 @@ const fundraiserRouter = router({
         metadata: { metricName: input.metricName, metricValue: input.metricValue },
       });
 
-      return { id: result[0].id };
+      return { id: result[0].insertId };
     }),
 });
 
@@ -663,7 +663,7 @@ const pledgeRouter = router({
         status: "pending_authorization",
       });
 
-      const pledgeId = pledgeResult[0].id;
+      const pledgeId = pledgeResult[0].insertId;
 
       // Create setup intent
       const setupIntent = await stripeHelpers.createSetupIntent({
@@ -784,7 +784,7 @@ const pledgeRouter = router({
       });
 
       return {
-        pledgeId: pledgeResult[0].id,
+        pledgeId: pledgeResult[0].insertId,
         clientSecret: paymentIntent.client_secret,
       };
     }),
@@ -1108,7 +1108,7 @@ const stripeRouter = router({
         stripePaymentIntentId: paymentIntent.id,
         status: "charged",
       });
-      const pledgeId = pledgeResult[0].id;
+      const pledgeId = pledgeResult[0].insertId;
 
       // Update pledge with chargedAt timestamp
       await db.updatePledge(pledgeId, {

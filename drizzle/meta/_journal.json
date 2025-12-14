@@ -1,26 +1,12 @@
 {
   "version": "7",
-  "dialect": "mysql",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1765674870024,
-      "tag": "0000_panoramic_cloak",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1765678630061,
-      "tag": "0001_milky_xorn",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1765681037386,
-      "tag": "0002_slippery_lorna_dane",
+      "version": "7",
+      "when": 1765739399019,
+      "tag": "0000_loose_lady_vermin",
       "breakpoints": true
     }
   ]

@@ -29,8 +29,8 @@ export async function createRaffleItem(item: InsertRaffleItem) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const [result] = await db.insert(raffleItems).values(item).returning({ id: raffleItems.id });
-  return result.id;
+  const [result] = await db.insert(raffleItems).values(item);
+  return result.insertId;
 }
 
 export async function getRaffleItems(fundraiserId: number) {
@@ -44,8 +44,8 @@ export async function createRaffleTier(tier: InsertRaffleTier) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const [result] = await db.insert(raffleTiers).values(tier).returning({ id: raffleTiers.id });
-  return result.id;
+  const [result] = await db.insert(raffleTiers).values(tier);
+  return result.insertId;
 }
 
 export async function getRaffleTiers(fundraiserId: number) {
@@ -72,8 +72,8 @@ export async function createSquaresGrid(grid: InsertSquaresGrid) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const [result] = await db.insert(squaresGrids).values(grid).returning({ id: squaresGrids.id });
-  return result.id;
+  const [result] = await db.insert(squaresGrids).values(grid);
+  return result.insertId;
 }
 
 export async function getSquaresGrid(fundraiserId: number) {
@@ -88,8 +88,8 @@ export async function purchaseSquare(purchase: InsertSquaresPurchase) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const [result] = await db.insert(squaresPurchases).values(purchase).returning({ id: squaresPurchases.id });
-  return result.id;
+  const [result] = await db.insert(squaresPurchases).values(purchase);
+  return result.insertId;
 }
 
 export async function getSquaresPurchases(gridId: number) {
@@ -116,8 +116,8 @@ export async function createSquaresPayout(payout: InsertSquaresPayout) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const [result] = await db.insert(squaresPayouts).values(payout).returning({ id: squaresPayouts.id });
-  return result.id;
+  const [result] = await db.insert(squaresPayouts).values(payout);
+  return result.insertId;
 }
 
 export async function getSquaresPayouts(gridId: number) {
@@ -135,8 +135,8 @@ export async function createChallengeGoal(goal: InsertChallengeGoal) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const [result] = await db.insert(challengeGoals).values(goal).returning({ id: challengeGoals.id });
-  return result.id;
+  const [result] = await db.insert(challengeGoals).values(goal);
+  return result.insertId;
 }
 
 export async function getChallengeGoals(fundraiserId: number) {
@@ -167,8 +167,8 @@ export async function createTeamVsTeamMatch(match: InsertTeamVsTeamMatch) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const [result] = await db.insert(teamVsTeamMatches).values(match).returning({ id: teamVsTeamMatches.id });
-  return result.id;
+  const [result] = await db.insert(teamVsTeamMatches).values(match);
+  return result.insertId;
 }
 
 export async function getTeamVsTeamMatch(fundraiserId: number) {
@@ -233,8 +233,8 @@ export async function createDonationMatching(matching: InsertDonationMatching) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const [result] = await db.insert(donationMatching).values(matching).returning({ id: donationMatching.id });
-  return result.id;
+  const [result] = await db.insert(donationMatching).values(matching);
+  return result.insertId;
 }
 
 export async function getDonationMatching(fundraiserId: number) {
