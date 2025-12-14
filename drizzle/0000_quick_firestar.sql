@@ -1,5 +1,6 @@
 CREATE TYPE "public"."fundraiserTemplate" AS ENUM('direct_donation', 'micro_fundraiser', 'raffle', 'squares', 'challenge', 'team_vs_team', 'calendar', 'donation_matching');--> statement-breakpoint
 CREATE TYPE "public"."fundraiserType" AS ENUM('direct_donation', 'micro_fundraiser');--> statement-breakpoint
+CREATE TYPE "public"."notificationStatus" AS ENUM('pending', 'sent', 'failed');--> statement-breakpoint
 CREATE TYPE "public"."pledgeType" AS ENUM('direct_donation', 'micro_pledge');--> statement-breakpoint
 CREATE TYPE "public"."role" AS ENUM('user', 'admin');--> statement-breakpoint
 CREATE TYPE "public"."status" AS ENUM('draft', 'active', 'paused', 'completed', 'cancelled');--> statement-breakpoint
@@ -105,7 +106,7 @@ CREATE TABLE "notifications" (
 	"subject" varchar(500) NOT NULL,
 	"templateName" varchar(100) NOT NULL,
 	"templateData" text,
-	"status" "status" DEFAULT 'pending' NOT NULL,
+	"status" "notificationStatus" DEFAULT 'pending' NOT NULL,
 	"sentAt" timestamp,
 	"failureReason" text,
 	"createdAt" timestamp DEFAULT now() NOT NULL,

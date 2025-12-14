@@ -19,6 +19,7 @@ export const fundraiserTemplateEnum = pgEnum("fundraiserTemplate", [
   "calendar",
   "donation_matching"
 ]);
+export const notificationStatusEnum = pgEnum("notificationStatus", ["pending", "sent", "failed"]);
 
 
 /**
@@ -234,7 +235,7 @@ export const notifications = pgTable("notifications", {
   subject: varchar("subject", { length: 500 }).notNull(),
   templateName: varchar("templateName", { length: 100 }).notNull(),
   templateData: text("templateData"), // JSON
-  status: statusEnum("status").default("pending").notNull(),
+  status: notificationStatusEnum("status").default("pending").notNull(),
   sentAt: timestamp("sentAt"),
   failureReason: text("failureReason"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

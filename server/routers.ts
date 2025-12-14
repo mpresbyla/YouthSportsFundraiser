@@ -14,7 +14,24 @@ import { SignJWT } from "jose";
 // ============================================================================
 
 const authRouter = router({
-  me: publicProcedure.query(opts => opts.ctx.user),
+  me: publicProcedure.query(opts => {
+    // DEVELOPMENT ONLY: Bypass authentication
+    if (process.env.BYPASS_AUTH === 'true') {
+      return {
+        id: 999,
+        email: 'dev@example.com',
+        name: 'Development User',
+        role: 'admin' as const,
+        openId: null,
+        passwordHash: null,
+        loginMethod: 'bypass',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastSignedIn: new Date(),
+      };
+    }
+    return opts.ctx.user;
+  }),
   
   register: publicProcedure
     .input(

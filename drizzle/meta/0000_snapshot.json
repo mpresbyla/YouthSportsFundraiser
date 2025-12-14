@@ -1,5 +1,5 @@
 {
-  "id": "36f5a718-d31d-42c7-bd7c-5cc74ac16204",
+  "id": "c9fb0e9e-9dad-4d7f-8191-aeb91202fc58",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -604,7 +604,7 @@
         },
         "status": {
           "name": "status",
-          "type": "status",
+          "type": "notificationStatus",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
@@ -1519,6 +1519,15 @@
       "values": [
         "direct_donation",
         "micro_fundraiser"
+      ]
+    },
+    "public.notificationStatus": {
+      "name": "notificationStatus",
+      "schema": "public",
+      "values": [
+        "pending",
+        "sent",
+        "failed"
       ]
     },
     "public.pledgeType": {
