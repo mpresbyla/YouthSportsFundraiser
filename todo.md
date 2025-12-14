@@ -339,3 +339,14 @@
 - [x] Create .env.example template file
 - [x] Create comprehensive Windows setup guide (WINDOWS_SETUP.md)
 - [ ] User to test on Windows
+
+
+## Netlify Environment Variables (COMPLETED)
+- [x] Identify required environment variables for Netlify deployment
+- [x] Create comprehensive NETLIFY_ENV_VARS.md guide
+- [x] Document where to get Supabase credentials
+- [x] Document where to get Stripe credentials
+- [x] Provide step-by-step Netlify configuration instructions
+- [ ] User to configure environment variables in Netlify dashboard
+- [ ] User to redeploy Netlify site
+- [ ] User to verify deployment works
