@@ -188,7 +188,6 @@ export default function TeamDashboard() {
   const { data: fundraisers, refetch: refetchFundraisers } = trpc.team.getFundraisers.useQuery({ teamId });
   const { data: userRole } = trpc.role.getUserRole.useQuery({ teamId });
 
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [statsDialogOpen, setStatsDialogOpen] = useState(false);
   const [selectedFundraiserId, setSelectedFundraiserId] = useState<number | null>(null);
 
@@ -242,7 +241,7 @@ export default function TeamDashboard() {
       });
 
       toast.success("Fundraiser created successfully!");
-      setCreateDialogOpen(false);
+      // Dialog removed - using dedicated page now
       refetchFundraisers();
       
       // Reset form
@@ -385,77 +384,9 @@ export default function TeamDashboard() {
           <TabsContent value="fundraisers" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">Your Fundraisers</h2>
-              <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>Create Fundraiser</Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Create New Fundraiser</DialogTitle>
-                    <DialogDescription>Set up a new fundraising campaign for your team</DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleCreateFundraiser} className="space-y-4">
-                    <div>
-                      <Label htmlFor="title">Title *</Label>
-                      <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-                    </div>
-                    <div>
-                      <Label htmlFor="description">Description *</Label>
-                      <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} required />
-                    </div>
-                    <div>
-                      <Label htmlFor="type">Fundraiser Type *</Label>
-                      <Select value={fundraiserType} onValueChange={(v: "direct_donation" | "micro_fundraiser") => setFundraiserType(v)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="direct_donation">Direct Donation</SelectItem>
-                          <SelectItem value="micro_fundraiser">Micro-Fundraiser (Performance-based)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {fundraiserType === "direct_donation" && (
-                      <div>
-                        <Label htmlFor="goal">Goal Amount ($)</Label>
-                        <Input id="goal" type="number" step="0.01" value={goalAmount} onChange={(e) => setGoalAmount(e.target.value)} />
-                      </div>
-                    )}
-
-                    {fundraiserType === "micro_fundraiser" && (
-                      <>
-                        <div>
-                          <Label htmlFor="metricName">Metric Name (e.g., "Goals Scored") *</Label>
-                          <Input id="metricName" value={metricName} onChange={(e) => setMetricName(e.target.value)} required />
-                        </div>
-                        <div>
-                          <Label htmlFor="metricUnit">Metric Unit (e.g., "goal") *</Label>
-                          <Input id="metricUnit" value={metricUnit} onChange={(e) => setMetricUnit(e.target.value)} required />
-                        </div>
-                        <div>
-                          <Label htmlFor="pledgeAmount">Default Pledge Amount per Unit ($) *</Label>
-                          <Input id="pledgeAmount" type="number" step="0.01" value={defaultPledgeAmount} onChange={(e) => setDefaultPledgeAmount(e.target.value)} required />
-                        </div>
-                        <div>
-                          <Label htmlFor="cap">Default Cap Amount ($) *</Label>
-                          <Input id="cap" type="number" step="0.01" value={defaultCap} onChange={(e) => setDefaultCap(e.target.value)} required />
-                        </div>
-                        <div>
-                          <Label htmlFor="eventDate">Event Date</Label>
-                          <Input id="eventDate" type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
-                        </div>
-                      </>
-                    )}
-
-                    <DialogFooter>
-                      <Button type="submit" disabled={createFundraiser.isPending}>
-                        {createFundraiser.isPending ? "Creating..." : "Create Fundraiser"}
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
+              <Link href={`/team/${teamId}/create-fundraiser`}>
+                <Button>Create Fundraiser</Button>
+              </Link>
             </div>
 
             <div className="grid gap-6">

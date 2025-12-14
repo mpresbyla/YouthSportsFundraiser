@@ -82,6 +82,16 @@ export const fundraisers = mysqlTable("fundraisers", {
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
   fundraiserType: mysqlEnum("fundraiserType", ["direct_donation", "micro_fundraiser"]).notNull(),
+  fundraiserTemplate: mysqlEnum("fundraiserTemplate", [
+    "direct_donation",
+    "micro_fundraiser",
+    "raffle",
+    "squares",
+    "challenge",
+    "team_vs_team",
+    "calendar",
+    "donation_matching"
+  ]).default("direct_donation").notNull(),
   status: mysqlEnum("status", ["draft", "active", "paused", "completed", "cancelled"]).default("draft").notNull(),
   startDate: timestamp("startDate"),
   endDate: timestamp("endDate"),
@@ -220,3 +230,159 @@ export const notifications = mysqlTable("notifications", {
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
+
+/**
+ * Raffle Items - prizes for raffle fundraisers
+ */
+export const raffleItems = mysqlTable("raffleItems", {
+  id: int("id").autoincrement().primaryKey(),
+  fundraiserId: int("fundraiserId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  imageUrl: varchar("imageUrl", { length: 500 }),
+  sponsorName: varchar("sponsorName", { length: 255 }),
+  sponsorLogoUrl: varchar("sponsorLogoUrl", { length: 500 }),
+  totalEntries: int("totalEntries").default(0).notNull(),
+  winnerPledgeId: int("winnerPledgeId"),
+  drawnAt: timestamp("drawnAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RaffleItem = typeof raffleItems.$inferSelect;
+export type InsertRaffleItem = typeof raffleItems.$inferInsert;
+
+/**
+ * Raffle Tiers - pricing tiers for raffle entries
+ */
+export const raffleTiers = mysqlTable("raffleTiers", {
+  id: int("id").autoincrement().primaryKey(),
+  fundraiserId: int("fundraiserId").notNull(),
+  price: int("price").notNull(), // in cents
+  entries: int("entries").notNull(),
+  label: varchar("label", { length: 100 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RaffleTier = typeof raffleTiers.$inferSelect;
+export type InsertRaffleTier = typeof raffleTiers.$inferInsert;
+
+/**
+ * Squares Grids - Super Bowl squares and event squares
+ */
+export const squaresGrids = mysqlTable("squaresGrids", {
+  id: int("id").autoincrement().primaryKey(),
+  fundraiserId: int("fundraiserId").notNull(),
+  gridSize: int("gridSize").default(100).notNull(), // 10x10 = 100 squares
+  pricePerSquare: int("pricePerSquare").notNull(), // in cents
+  homeTeam: varchar("homeTeam", { length: 255 }),
+  awayTeam: varchar("awayTeam", { length: 255 }),
+  eventDate: timestamp("eventDate"),
+  homeNumbers: text("homeNumbers"), // JSON array [0,1,2,3,4,5,6,7,8,9]
+  awayNumbers: text("awayNumbers"), // JSON array
+  numbersLocked: int("numbersLocked").default(0).notNull(), // boolean as int
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SquaresGrid = typeof squaresGrids.$inferSelect;
+export type InsertSquaresGrid = typeof squaresGrids.$inferInsert;
+
+/**
+ * Squares Purchases - individual square purchases
+ */
+export const squaresPurchases = mysqlTable("squaresPurchases", {
+  id: int("id").autoincrement().primaryKey(),
+  gridId: int("gridId").notNull(),
+  pledgeId: int("pledgeId").notNull(),
+  squarePosition: int("squarePosition").notNull(), // 0-99 for 10x10 grid
+  donorName: varchar("donorName", { length: 255 }),
+  purchasedAt: timestamp("purchasedAt").defaultNow().notNull(),
+});
+
+export type SquaresPurchase = typeof squaresPurchases.$inferSelect;
+export type InsertSquaresPurchase = typeof squaresPurchases.$inferInsert;
+
+/**
+ * Squares Payouts - quarter/final payouts for squares
+ */
+export const squaresPayouts = mysqlTable("squaresPayouts", {
+  id: int("id").autoincrement().primaryKey(),
+  gridId: int("gridId").notNull(),
+  quarter: int("quarter"), // 1,2,3,4 or NULL for final
+  homeScore: int("homeScore"),
+  awayScore: int("awayScore"),
+  winnerSquareId: int("winnerSquareId"),
+  payoutAmount: int("payoutAmount"), // in cents
+  paidAt: timestamp("paidAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SquaresPayout = typeof squaresPayouts.$inferSelect;
+export type InsertSquaresPayout = typeof squaresPayouts.$inferInsert;
+
+/**
+ * Challenge Goals - milestone-based challenges
+ */
+export const challengeGoals = mysqlTable("challengeGoals", {
+  id: int("id").autoincrement().primaryKey(),
+  fundraiserId: int("fundraiserId").notNull(),
+  goalAmount: int("goalAmount").notNull(), // in cents
+  challengeDescription: text("challengeDescription").notNull(),
+  completedDescription: text("completedDescription"),
+  isCompleted: int("isCompleted").default(0).notNull(), // boolean as int
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ChallengeGoal = typeof challengeGoals.$inferSelect;
+export type InsertChallengeGoal = typeof challengeGoals.$inferInsert;
+
+/**
+ * Team vs Team Matches - competitive fundraising
+ */
+export const teamVsTeamMatches = mysqlTable("teamVsTeamMatches", {
+  id: int("id").autoincrement().primaryKey(),
+  fundraiser1Id: int("fundraiser1Id").notNull(),
+  fundraiser2Id: int("fundraiser2Id").notNull(),
+  loserChallenge: text("loserChallenge"),
+  winnerId: int("winnerId"),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TeamVsTeamMatch = typeof teamVsTeamMatches.$inferSelect;
+export type InsertTeamVsTeamMatch = typeof teamVsTeamMatches.$inferInsert;
+
+/**
+ * Calendar Dates - pick-a-date fundraisers
+ */
+export const calendarDates = mysqlTable("calendarDates", {
+  id: int("id").autoincrement().primaryKey(),
+  fundraiserId: int("fundraiserId").notNull(),
+  dateValue: varchar("dateValue", { length: 10 }).notNull(), // YYYY-MM-DD
+  amount: int("amount").notNull(), // in cents
+  purchaserPledgeId: int("purchaserPledgeId"),
+  purchaserName: varchar("purchaserName", { length: 255 }),
+  purchasedAt: timestamp("purchasedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CalendarDate = typeof calendarDates.$inferSelect;
+export type InsertCalendarDate = typeof calendarDates.$inferInsert;
+
+/**
+ * Donation Matching - sponsor-matched donations
+ */
+export const donationMatching = mysqlTable("donationMatching", {
+  id: int("id").autoincrement().primaryKey(),
+  fundraiserId: int("fundraiserId").notNull(),
+  sponsorName: varchar("sponsorName", { length: 255 }).notNull(),
+  sponsorLogoUrl: varchar("sponsorLogoUrl", { length: 500 }),
+  matchAmount: int("matchAmount").notNull(), // max amount to match in cents
+  matchRatio: int("matchRatio").default(100).notNull(), // 100 = 100% match, 50 = 50% match
+  currentMatched: int("currentMatched").default(0).notNull(),
+  expiresAt: timestamp("expiresAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type DonationMatching = typeof donationMatching.$inferSelect;
+export type InsertDonationMatching = typeof donationMatching.$inferInsert;

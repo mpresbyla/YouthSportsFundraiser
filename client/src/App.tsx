@@ -10,16 +10,20 @@ import TeamDetail from "./pages/TeamDetail";
 import FundraiserDetail from "./pages/FundraiserDetail";
 import Dashboard from "./pages/Dashboard";
 import TeamDashboard from "./pages/TeamDashboard";
+import CreateFundraiser from "./pages/CreateFundraiser";
+import CreateLeague from "./pages/CreateLeague";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/create-league" component={CreateLeague} />
       <Route path="/league/:id" component={LeagueDetail} />
       <Route path="/team/:id" component={TeamDetail} />
       <Route path="/fundraiser/:id" component={FundraiserDetail} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/team/:id/dashboard" component={TeamDashboard} />
+      <Route path="/team/:teamId/create-fundraiser" component={CreateFundraiser} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

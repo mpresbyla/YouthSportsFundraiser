@@ -50,21 +50,29 @@ const leagueRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Only platform admins can create leagues
-      if (ctx.user.role !== "admin") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can create leagues" });
-      }
+      // Any authenticated user can create a league
+      // They will automatically become the league admin
 
       const result = await db.createLeague(input);
+      const leagueId = result[0].insertId;
+      
+      // Assign creator as league admin
+      await db.assignLeagueAdmin(leagueId, ctx.user.id);
+      
       await db.logAudit({
         userId: ctx.user.id,
         action: "league.create",
         entityType: "league",
-        entityId: result[0].insertId,
+        entityId: leagueId,
         metadata: { name: input.name },
       });
 
-      return { id: result[0].insertId };
+      // Return the full league object
+      const league = await db.getLeagueById(leagueId);
+      if (!league) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create league" });
+      }
+      return league;
     }),
 
   getTeams: publicProcedure
@@ -117,7 +125,12 @@ const teamRouter = router({
         metadata: { name: input.name, leagueId: input.leagueId },
       });
 
-      return { id: teamId };
+      // Return the full team object
+      const team = await db.getTeamById(teamId);
+      if (!team) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create team" });
+      }
+      return team;
     }),
 
   // Stripe Connect onboarding
@@ -970,6 +983,244 @@ const reportingRouter = router({
     }),
 });
 
+// ============================================================================
+// Templates Router
+// ============================================================================
+
+import * as templatesDb from "./templates-db";
+
+const templatesRouter = router({
+  // Raffle
+  createRaffleItem: protectedProcedure
+    .input(z.object({
+      fundraiserId: z.number(),
+      title: z.string(),
+      description: z.string().optional(),
+      imageUrl: z.string().optional(),
+      sponsorName: z.string().optional(),
+      sponsorLogoUrl: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const fundraiser = await db.getFundraiserById(input.fundraiserId);
+      if (!fundraiser) throw new TRPCError({ code: "NOT_FOUND" });
+      
+      const canManage = await db.canManageTeam(ctx.user.id, fundraiser.teamId);
+      if (!canManage) throw new TRPCError({ code: "FORBIDDEN" });
+      
+      const itemId = await templatesDb.createRaffleItem(input);
+      return { itemId };
+    }),
+
+  getRaffleItems: publicProcedure
+    .input(z.object({ fundraiserId: z.number() }))
+    .query(async ({ input }) => {
+      return templatesDb.getRaffleItems(input.fundraiserId);
+    }),
+
+  createRaffleTiers: protectedProcedure
+    .input(z.object({
+      fundraiserId: z.number(),
+      tiers: z.array(z.object({
+        price: z.number(),
+        entries: z.number(),
+        label: z.string().optional(),
+      })),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const fundraiser = await db.getFundraiserById(input.fundraiserId);
+      if (!fundraiser) throw new TRPCError({ code: "NOT_FOUND" });
+      
+      const canManage = await db.canManageTeam(ctx.user.id, fundraiser.teamId);
+      if (!canManage) throw new TRPCError({ code: "FORBIDDEN" });
+      
+      for (const tier of input.tiers) {
+        await templatesDb.createRaffleTier({ fundraiserId: input.fundraiserId, ...tier });
+      }
+      return { success: true };
+    }),
+
+  getRaffleTiers: publicProcedure
+    .input(z.object({ fundraiserId: z.number() }))
+    .query(async ({ input }) => {
+      return templatesDb.getRaffleTiers(input.fundraiserId);
+    }),
+
+  drawRaffleWinner: protectedProcedure
+    .input(z.object({ itemId: z.number(), winnerPledgeId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      await templatesDb.drawRaffleWinner(input.itemId, input.winnerPledgeId);
+      return { success: true };
+    }),
+
+  // Squares
+  createSquaresGrid: protectedProcedure
+    .input(z.object({
+      fundraiserId: z.number(),
+      pricePerSquare: z.number(),
+      homeTeam: z.string(),
+      awayTeam: z.string(),
+      eventDate: z.date(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const fundraiser = await db.getFundraiserById(input.fundraiserId);
+      if (!fundraiser) throw new TRPCError({ code: "NOT_FOUND" });
+      
+      const canManage = await db.canManageTeam(ctx.user.id, fundraiser.teamId);
+      if (!canManage) throw new TRPCError({ code: "FORBIDDEN" });
+      
+      const gridId = await templatesDb.createSquaresGrid(input);
+      return { gridId };
+    }),
+
+  getSquaresGrid: publicProcedure
+    .input(z.object({ fundraiserId: z.number() }))
+    .query(async ({ input }) => {
+      return templatesDb.getSquaresGrid(input.fundraiserId);
+    }),
+
+  purchaseSquare: publicProcedure
+    .input(z.object({
+      gridId: z.number(),
+      pledgeId: z.number(),
+      squarePosition: z.number(),
+      donorName: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const purchaseId = await templatesDb.purchaseSquare(input);
+      return { purchaseId };
+    }),
+
+  getSquaresPurchases: publicProcedure
+    .input(z.object({ gridId: z.number() }))
+    .query(async ({ input }) => {
+      return templatesDb.getSquaresPurchases(input.gridId);
+    }),
+
+  lockSquaresNumbers: protectedProcedure
+    .input(z.object({ gridId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      // Generate random numbers
+      const homeNumbers = Array.from({ length: 10 }, (_, i) => i).sort(() => Math.random() - 0.5);
+      const awayNumbers = Array.from({ length: 10 }, (_, i) => i).sort(() => Math.random() - 0.5);
+      
+      await templatesDb.lockSquaresNumbers(input.gridId, homeNumbers, awayNumbers);
+      return { homeNumbers, awayNumbers };
+    }),
+
+  // Challenge
+  createChallengeGoals: protectedProcedure
+    .input(z.object({
+      fundraiserId: z.number(),
+      goals: z.array(z.object({
+        goalAmount: z.number(),
+        challengeDescription: z.string(),
+      })),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const fundraiser = await db.getFundraiserById(input.fundraiserId);
+      if (!fundraiser) throw new TRPCError({ code: "NOT_FOUND" });
+      
+      const canManage = await db.canManageTeam(ctx.user.id, fundraiser.teamId);
+      if (!canManage) throw new TRPCError({ code: "FORBIDDEN" });
+      
+      for (const goal of input.goals) {
+        await templatesDb.createChallengeGoal({ fundraiserId: input.fundraiserId, ...goal });
+      }
+      return { success: true };
+    }),
+
+  getChallengeGoals: publicProcedure
+    .input(z.object({ fundraiserId: z.number() }))
+    .query(async ({ input }) => {
+      return templatesDb.getChallengeGoals(input.fundraiserId);
+    }),
+
+  completeChallengeGoal: protectedProcedure
+    .input(z.object({ goalId: z.number(), completedDescription: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await templatesDb.completeChallengeGoal(input.goalId, input.completedDescription);
+      return { success: true };
+    }),
+
+  // Calendar
+  createCalendarDates: protectedProcedure
+    .input(z.object({
+      fundraiserId: z.number(),
+      month: z.string(), // YYYY-MM
+      basePrice: z.number(),
+      specialDates: z.record(z.string(), z.number()).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const fundraiser = await db.getFundraiserById(input.fundraiserId);
+      if (!fundraiser) throw new TRPCError({ code: "NOT_FOUND" });
+      
+      const canManage = await db.canManageTeam(ctx.user.id, fundraiser.teamId);
+      if (!canManage) throw new TRPCError({ code: "FORBIDDEN" });
+      
+      // Generate all dates for the month
+      const [year, month] = input.month.split("-").map(Number);
+      const daysInMonth = new Date(year, month, 0).getDate();
+      
+      const dates = [];
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateValue = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        const amount = (input.specialDates && input.specialDates[dateValue]) ?? input.basePrice;
+        dates.push({
+          fundraiserId: input.fundraiserId,
+          dateValue,
+          amount,
+        });
+      }
+      
+      await templatesDb.createCalendarDates(dates);
+      return { success: true, datesCreated: dates.length };
+    }),
+
+  getCalendarDates: publicProcedure
+    .input(z.object({ fundraiserId: z.number() }))
+    .query(async ({ input }) => {
+      return templatesDb.getCalendarDates(input.fundraiserId);
+    }),
+
+  purchaseCalendarDate: publicProcedure
+    .input(z.object({
+      dateId: z.number(),
+      pledgeId: z.number(),
+      purchaserName: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      await templatesDb.purchaseCalendarDate(input.dateId, input.pledgeId, input.purchaserName);
+      return { success: true };
+    }),
+
+  // Donation Matching
+  createDonationMatching: protectedProcedure
+    .input(z.object({
+      fundraiserId: z.number(),
+      sponsorName: z.string(),
+      sponsorLogoUrl: z.string().optional(),
+      matchAmount: z.number(),
+      matchRatio: z.number().optional(),
+      expiresAt: z.date().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const fundraiser = await db.getFundraiserById(input.fundraiserId);
+      if (!fundraiser) throw new TRPCError({ code: "NOT_FOUND" });
+      
+      const canManage = await db.canManageTeam(ctx.user.id, fundraiser.teamId);
+      if (!canManage) throw new TRPCError({ code: "FORBIDDEN" });
+      
+      const matchingId = await templatesDb.createDonationMatching(input);
+      return { matchingId };
+    }),
+
+  getDonationMatching: publicProcedure
+    .input(z.object({ fundraiserId: z.number() }))
+    .query(async ({ input }) => {
+      return templatesDb.getDonationMatching(input.fundraiserId);
+    }),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: authRouter,
@@ -981,6 +1232,7 @@ export const appRouter = router({
   stripe: stripeRouter,
   role: roleRouter,
   reporting: reportingRouter,
+  templates: templatesRouter,
 });
 
 export type AppRouter = typeof appRouter;

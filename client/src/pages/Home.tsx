@@ -79,6 +79,14 @@ export default function Home() {
         <div className="container">
           <h2 className="text-3xl font-bold text-center mb-12">Active Leagues</h2>
           
+          {isAuthenticated && (
+            <div className="mb-8 text-center">
+              <Button size="lg" asChild>
+                <Link href="/create-league">Create Your League</Link>
+              </Button>
+            </div>
+          )}
+          
           {isLoading ? (
             <div className="text-center text-muted-foreground">Loading leagues...</div>
           ) : leagues && leagues.length > 0 ? (

@@ -87,3 +87,44 @@
 - Testing with real Stripe accounts
 - User acceptance testing
 - Production deployment
+
+
+## New Feature Request - Fundraiser Templates
+
+### Template System
+- [ ] Extract fundraiser templates from HTML file
+- [ ] Design database schema for template-based fundraisers
+- [ ] Create template configuration system
+- [ ] Build template selection UI in fundraiser wizard
+
+### Template Types to Implement
+- [ ] Calendar-based fundraisers (pick-a-date)
+- [ ] Donation matching campaigns
+- [ ] Raffle fundraisers
+- [ ] Auction fundraisers
+- [ ] Crowdfunding with tiers/rewards
+- [ ] Any other templates from the HTML file
+
+### Frontend Implementation
+- [ ] Template selection interface
+- [ ] Template-specific configuration forms
+- [ ] Public pages for each template type
+- [ ] Template-specific donor flows
+
+### Backend Implementation
+- [ ] Template-specific payment logic
+- [ ] Template-specific reporting
+- [ ] Template-specific notifications
+
+
+## User Onboarding & UX Fixes (URGENT)
+
+### Anonymous Donations (Option 3)
+- [x] Make fundraiser detail pages fully public (no auth required)
+- [x] Update donation/pledge tRPC procedures to work without authentication
+- [x] Remove auth checks from fundraiser viewing
+- [x] Keep team dashboard auth-protected for managers
+- [x] Add league creation for authenticated users
+- [x] Improve home page to show all public leagues
+- [ ] Test complete donor flow without login
+- [ ] Test complete team manager flow with login

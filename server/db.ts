@@ -152,6 +152,18 @@ export async function isLeagueAdmin(userId: number, leagueId: number): Promise<b
   return result.length > 0;
 }
 
+export async function assignLeagueAdmin(leagueId: number, userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.insert(userRoles).values({
+    userId,
+    leagueId,
+    role: "league_admin",
+    grantedAt: new Date(),
+  });
+}
+
 export async function isTeamManager(userId: number, teamId: number): Promise<boolean> {
   const db = await getDb();
   if (!db) return false;
