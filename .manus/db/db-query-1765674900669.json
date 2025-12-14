@@ -1,0 +1,25 @@
+{
+  "query": "SHOW TABLES;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 43vTRjgAqpvcKeB.eb6693f9eac6 --database VcCft6GGjHvPTHjXgiRKM9 --execute SHOW TABLES;",
+  "rows": [
+    {
+      "Tables_in_VcCft6GGjHvPTHjXgiRKM9": "__drizzle_migrations"
+    },
+    {
+      "Tables_in_VcCft6GGjHvPTHjXgiRKM9": "auditLogs"
+    },
+    {
+      "Tables_in_VcCft6GGjHvPTHjXgiRKM9": "charges"
+    },
+    {
+      "Tables_in_VcCft6GGjHvPTHjXgiRKM9": "fundraisers"
+    },
+    {
+      "Tables_in_VcCft6GGjHvPTHjXgiRKM9": "users"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_VcCft6GGjHvPTHjXgiRKM9\n__drizzle_migrations\nauditLogs\ncharges\nfundraisers\nusers\n",
+  "stderr": "",
+  "execution_time_ms": 51
+}
