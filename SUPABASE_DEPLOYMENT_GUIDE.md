@@ -54,7 +54,21 @@ This guide will help you deploy the Youth Sports Fundraising Platform using Supa
    - **anon/public key**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
    - **service_role key**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` (keep secret!)
 
-### Step 5: Deploy Edge Functions
+### Step 5: Enable Stripe Wrapper (Optional but Recommended)
+
+The Stripe Wrapper allows you to query Stripe data directly from PostgreSQL.
+
+1. Go to **Database** → **Extensions**
+2. Enable "Supabase Wrappers" extension
+3. Go to **Settings** → **Vault**
+4. Create secret named `stripe_secret_key` with your Stripe secret key
+5. Run migration `20250103000000_stripe_wrapper.sql` in SQL Editor
+6. Run migration `20250104000000_stripe_analytics.sql` in SQL Editor
+7. Test by running: `SELECT COUNT(*) FROM stripe_customers;`
+
+**See STRIPE_WRAPPER_GUIDE.md for detailed instructions.**
+
+### Step 6: Deploy Edge Functions
 
 1. Install Supabase CLI:
    ```bash
