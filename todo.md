@@ -313,3 +313,13 @@
 - [x] Create one-command deployment guide (QUICK_START.md)
 - [x] Document Supabase project setup steps
 - [x] Provide deployment commands
+
+
+## Deployment Issues (RESOLVED)
+- [x] Verify correct GitHub repository name (mpresbyla/YouthSportsFundraiser - PRIVATE)
+- [x] Fix Netlify 404 error with proper routing configuration
+- [x] Create netlify.toml configuration file with SPA redirects
+- [x] Create client/public/_redirects fallback file
+- [x] Create comprehensive NETLIFY_DEPLOYMENT.md guide
+- [x] Document repository access methods (gh CLI for private repos)
+- [x] Update deployment instructions with correct repository URL
