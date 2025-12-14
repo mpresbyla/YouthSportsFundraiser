@@ -12,11 +12,15 @@ import Dashboard from "./pages/Dashboard";
 import TeamDashboard from "./pages/TeamDashboard";
 import CreateFundraiser from "./pages/CreateFundraiser";
 import CreateLeague from "./pages/CreateLeague";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
       <Route path="/create-league" component={CreateLeague} />
       <Route path="/league/:id" component={LeagueDetail} />
       <Route path="/team/:id" component={TeamDetail} />

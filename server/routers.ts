@@ -6,6 +6,8 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 import * as stripeHelpers from "./stripe";
+import * as simpleAuth from "./simple-auth";
+import { SignJWT } from "jose";
 
 // ============================================================================
 // Auth Router
@@ -13,6 +15,78 @@ import * as stripeHelpers from "./stripe";
 
 const authRouter = router({
   me: publicProcedure.query(opts => opts.ctx.user),
+  
+  register: publicProcedure
+    .input(
+      z.object({
+        email: z.string().email(),
+        password: z.string().min(6),
+        name: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const user = await simpleAuth.registerUser(input.email, input.password, input.name);
+      
+      // Create session token
+      const secret = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secret");
+      const token = await new SignJWT({ userId: user.id, email: user.email })
+        .setProtectedHeader({ alg: "HS256" })
+        .setExpirationTime("30d")
+        .sign(secret);
+      
+      // Set cookie
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.cookie(COOKIE_NAME, token, {
+        ...cookieOptions,
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      });
+      
+      return {
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
+      };
+    }),
+  
+  login: publicProcedure
+    .input(
+      z.object({
+        email: z.string().email(),
+        password: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const user = await simpleAuth.loginUser(input.email, input.password);
+      
+      // Create session token
+      const secret = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secret");
+      const token = await new SignJWT({ userId: user.id, email: user.email })
+        .setProtectedHeader({ alg: "HS256" })
+        .setExpirationTime("30d")
+        .sign(secret);
+      
+      // Set cookie
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.cookie(COOKIE_NAME, token, {
+        ...cookieOptions,
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      });
+      
+      return {
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
+      };
+    }),
+  
   logout: publicProcedure.mutation(({ ctx }) => {
     const cookieOptions = getSessionCookieOptions(ctx.req);
     ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });

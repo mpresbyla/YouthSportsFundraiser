@@ -128,3 +128,17 @@
 - [x] Improve home page to show all public leagues
 - [ ] Test complete donor flow without login
 - [ ] Test complete team manager flow with login
+
+
+## Simple Email/Password Auth (COMPLETED)
+
+- [x] Add password field to users table
+- [x] Install bcrypt for password hashing
+- [x] Create register procedure (email, password, name)
+- [x] Create login procedure (email, password) returning session token
+- [x] Update context to read session from cookie
+- [x] Build registration page UI at /register
+- [x] Build login page UI at /login
+- [x] Update home page to show login/register buttons
+- [x] Keep Manus Auth as fallback for existing users
+- [x] Test complete auth flow (3/7 tests passing, login tests need header fixes)

@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getLoginUrl } from "@/const";
+
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { Heart, TrendingUp, Users } from "lucide-react";
@@ -24,9 +24,14 @@ export default function Home() {
               Secure payments, easy management, and transparent tracking.
             </p>
             {!isAuthenticated ? (
-              <Button size="lg" asChild>
-                <a href={getLoginUrl()}>Get Started</a>
-              </Button>
+              <div className="flex gap-4 justify-center">
+                <Button size="lg" variant="outline" asChild>
+                  <Link href="/login">Login</Link>
+                </Button>
+                <Button size="lg" asChild>
+                  <Link href="/register">Get Started</Link>
+                </Button>
+              </div>
             ) : (
               <Button size="lg" asChild>
                 <Link href="/dashboard">Go to Dashboard</Link>
@@ -129,7 +134,7 @@ export default function Home() {
           </p>
           {!isAuthenticated ? (
             <Button size="lg" variant="secondary" asChild>
-              <a href={getLoginUrl()}>Sign Up Now</a>
+              <Link href="/register">Sign Up Now</Link>
             </Button>
           ) : (
             <Button size="lg" variant="secondary" asChild>
