@@ -1,0 +1,8 @@
+{
+  "query": "SELECT * FROM roles WHERE teamId = 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 43vTRjgAqpvcKeB.eb6693f9eac6 --database VcCft6GGjHvPTHjXgiRKM9 --execute SELECT * FROM roles WHERE teamId = 1;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1146 (42S02) at line 1: Table 'vccft6ggjhvpthjxgirkm9.roles' doesn't exist"
+  ]
+}

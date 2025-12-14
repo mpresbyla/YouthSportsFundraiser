@@ -59,6 +59,7 @@ export default function CreateFundraiser() {
   };
 
   const handleFinalSubmit = async (templateConfig: any) => {
+    console.log("handleFinalSubmit called with:", { templateConfig, selectedTemplate, basicInfo });
     try {
       // Create the base fundraiser
       const fundraiserType = selectedTemplate === "micro_fundraiser" ? "micro_fundraiser" : "direct_donation";
@@ -141,6 +142,10 @@ export default function CreateFundraiser() {
           expiresAt: templateConfig.expiresAt ? new Date(templateConfig.expiresAt) : undefined,
         });
       }
+
+      // Navigate back to team dashboard
+      toast.success("Fundraiser created successfully!");
+      setLocation(`/team/${teamId}/dashboard`);
 
     } catch (error: any) {
       toast.error(error.message || "Failed to create fundraiser");

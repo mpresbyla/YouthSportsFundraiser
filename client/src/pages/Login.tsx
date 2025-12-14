@@ -11,12 +11,17 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const utils = trpc.useUtils();
 
   const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Logged in successfully!");
-      // Reload to refresh auth state
-      window.location.href = "/";
+      // Invalidate auth query to refetch user data
+      await utils.auth.me.invalidate();
+      // Small delay to ensure cookie is set
+      setTimeout(() => {
+        setLocation("/");
+      }, 100);
     },
     onError: (error) => {
       toast.error(error.message || "Login failed");

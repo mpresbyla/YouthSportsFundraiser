@@ -13,12 +13,17 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const utils = trpc.useUtils();
 
   const registerMutation = trpc.auth.register.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Account created successfully!");
-      // Reload to refresh auth state
-      window.location.href = "/";
+      // Invalidate auth query to refetch user data
+      await utils.auth.me.invalidate();
+      // Small delay to ensure cookie is set
+      setTimeout(() => {
+        setLocation("/");
+      }, 100);
     },
     onError: (error) => {
       toast.error(error.message || "Registration failed");

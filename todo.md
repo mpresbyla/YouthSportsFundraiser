@@ -142,3 +142,36 @@
 - [x] Update home page to show login/register buttons
 - [x] Keep Manus Auth as fallback for existing users
 - [x] Test complete auth flow (3/7 tests passing, login tests need header fixes)
+
+
+## Authentication Fix (COMPLETED)
+
+- [x] Update Login page to invalidate auth query after successful login
+- [x] Update Register page to invalidate auth query after successful registration
+- [x] Test login flow with existing user (mpresbyla@gmail.com)
+- [x] Verify auth state persists after redirect
+- [x] Ensure dashboard is accessible after login
+
+## Fundraiser Templates Implementation (IN PROGRESS)
+
+### Backend (COMPLETED)
+- [x] Database schema for 6 template types (raffle, calendar, squares, challenges, team_vs_team, donation_matching)
+- [x] tRPC procedures for template-specific operations
+- [x] Template configuration storage and retrieval
+
+### Frontend (COMPLETED - Creation Wizard)
+- [x] Create multi-step fundraiser creation wizard
+- [x] Integrate TemplateSelector component into CreateFundraiser page
+- [x] Build template-specific configuration forms (Raffle, Calendar, Squares, Challenge, Donation Matching)
+- [x] Add navigation after successful fundraiser creation
+
+### Frontend (TO DO - Public Pages)
+- [ ] Create public fundraiser pages for each template:
+  - [ ] Raffle entry page with ticket selection
+  - [ ] Calendar grid page with date selection
+  - [ ] Super Bowl squares grid page
+  - [ ] Challenge tracking page
+  - [ ] Team vs Team competition page
+  - [ ] Donation matching page with progress bar
+- [ ] Add template-specific pledge/donation flows
+- [ ] Test all 6 template types end-to-end
