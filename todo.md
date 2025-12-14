@@ -202,3 +202,9 @@
 - [ ] Challenge tracking page with goal progress and donation (future)
 - [ ] Team vs Team competition page with dual leaderboards (future)
 - [ ] Donation Matching page with progress bar and countdown (future)
+
+
+## Post-Login Redirect Fix (COMPLETED)
+- [x] Update Login page to redirect to /dashboard instead of /
+- [x] Update Register page to redirect to /dashboard instead of /
+- [x] Test complete login flow with Fred's account

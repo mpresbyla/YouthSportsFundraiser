@@ -20,7 +20,7 @@ export default function Login() {
       await utils.auth.me.invalidate();
       // Small delay to ensure cookie is set
       setTimeout(() => {
-        setLocation("/");
+        setLocation("/dashboard");
       }, 100);
     },
     onError: (error) => {
