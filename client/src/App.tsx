@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import LeagueDetail from "./pages/LeagueDetail";
 import TeamDetail from "./pages/TeamDetail";
 import FundraiserDetail from "./pages/FundraiserDetail";
+import FundraiserPreview from "./pages/FundraiserPreview";
 import Dashboard from "./pages/Dashboard";
 import TeamDashboard from "./pages/TeamDashboard";
 import CreateFundraiser from "./pages/CreateFundraiser";
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/league/:id" component={LeagueDetail} />
       <Route path="/team/:id" component={TeamDetail} />
       <Route path="/fundraiser/:id" component={FundraiserDetail} />
+      <Route path="/fundraiser/:id/preview" component={FundraiserPreview} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/team/:id/dashboard" component={TeamDashboard} />
       <Route path="/team/:teamId/create-fundraiser" component={CreateFundraiser} />

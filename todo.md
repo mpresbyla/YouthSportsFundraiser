@@ -175,3 +175,30 @@
   - [ ] Donation matching page with progress bar
 - [ ] Add template-specific pledge/donation flows
 - [ ] Test all 6 template types end-to-end
+
+
+## New Features - Public Pages, Preview, and Status Management (COMPLETED)
+
+### Fundraiser Status Management ✅
+- [x] Add status transition procedures (draft → active, active → paused, active → completed)
+- [x] Add publish/pause/resume/complete buttons to team dashboard
+- [x] Add visual status indicators (badges) to fundraiser cards with proper colors
+- [x] Add confirmation dialogs for status changes
+- [ ] Implement automated status transitions based on end dates (future enhancement)
+
+### Fundraiser Preview ✅
+- [x] Add preview button to team dashboard for draft fundraisers
+- [x] Create preview route that shows fundraiser as donors will see it
+- [x] Add "Preview Mode" banner to distinguish from live fundraisers
+- [x] Allow managers to preview before publishing
+
+### Public Fundraiser Pages by Template ✅
+- [x] Raffle entry page with ticket tier selection and payment
+- [x] Template-aware fundraiser detail page with dynamic content
+- [x] Prize display for raffle fundraisers
+- [x] Entry tier selection and payment flow
+- [ ] Calendar grid page with date selection and purchase flow (future)
+- [ ] Super Bowl Squares grid page with square selection (future)
+- [ ] Challenge tracking page with goal progress and donation (future)
+- [ ] Team vs Team competition page with dual leaderboards (future)
+- [ ] Donation Matching page with progress bar and countdown (future)

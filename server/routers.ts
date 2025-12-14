@@ -421,6 +421,108 @@ const fundraiserRouter = router({
       return { success: true };
     }),
 
+  pause: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const fundraiser = await db.getFundraiserById(input.id);
+      if (!fundraiser) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      const canManage = await db.canManageTeam(ctx.user.id, fundraiser.teamId);
+      if (!canManage) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      if (fundraiser.status !== "active") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Only active fundraisers can be paused",
+        });
+      }
+
+      await db.updateFundraiser(input.id, {
+        status: "paused",
+      });
+
+      await db.logAudit({
+        userId: ctx.user.id,
+        action: "fundraiser.pause",
+        entityType: "fundraiser",
+        entityId: input.id,
+      });
+
+      return { success: true };
+    }),
+
+  resume: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const fundraiser = await db.getFundraiserById(input.id);
+      if (!fundraiser) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      const canManage = await db.canManageTeam(ctx.user.id, fundraiser.teamId);
+      if (!canManage) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      if (fundraiser.status !== "paused") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Only paused fundraisers can be resumed",
+        });
+      }
+
+      await db.updateFundraiser(input.id, {
+        status: "active",
+      });
+
+      await db.logAudit({
+        userId: ctx.user.id,
+        action: "fundraiser.resume",
+        entityType: "fundraiser",
+        entityId: input.id,
+      });
+
+      return { success: true };
+    }),
+
+  complete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const fundraiser = await db.getFundraiserById(input.id);
+      if (!fundraiser) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      const canManage = await db.canManageTeam(ctx.user.id, fundraiser.teamId);
+      if (!canManage) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      if (fundraiser.status === "completed" || fundraiser.status === "cancelled") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Fundraiser is already completed or cancelled",
+        });
+      }
+
+      await db.updateFundraiser(input.id, {
+        status: "completed",
+      });
+
+      await db.logAudit({
+        userId: ctx.user.id,
+        action: "fundraiser.complete",
+        entityType: "fundraiser",
+        entityId: input.id,
+      });
+
+      return { success: true };
+    }),
+
   getPledges: protectedProcedure
     .input(z.object({ fundraiserId: z.number() }))
     .query(async ({ ctx, input }) => {

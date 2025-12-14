@@ -205,10 +205,14 @@ export default function TeamDashboard() {
 
   const createFundraiser = trpc.fundraiser.create.useMutation();
   const publishFundraiser = trpc.fundraiser.publish.useMutation();
+  const pauseFundraiser = trpc.fundraiser.pause.useMutation();
+  const resumeFundraiser = trpc.fundraiser.resume.useMutation();
+  const completeFundraiser = trpc.fundraiser.complete.useMutation();
   const enterStats = trpc.fundraiser.enterStats.useMutation();
   const processCharges = trpc.charge.triggerCharges.useMutation();
   const createStripeAccount = trpc.stripe.createConnectAccount.useMutation();
   const createOnboardingLink = trpc.stripe.createOnboardingLink.useMutation();
+  const utils = trpc.useUtils();
 
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -263,8 +267,41 @@ export default function TeamDashboard() {
       await publishFundraiser.mutateAsync({ id: fundraiserId });
       toast.success("Fundraiser published!");
       refetchFundraisers();
-    } catch (error) {
-      toast.error("Failed to publish fundraiser");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to publish fundraiser");
+    }
+  };
+
+  const handlePause = async (fundraiserId: number) => {
+    try {
+      await pauseFundraiser.mutateAsync({ id: fundraiserId });
+      toast.success("Fundraiser paused");
+      refetchFundraisers();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to pause fundraiser");
+    }
+  };
+
+  const handleResume = async (fundraiserId: number) => {
+    try {
+      await resumeFundraiser.mutateAsync({ id: fundraiserId });
+      toast.success("Fundraiser resumed!");
+      refetchFundraisers();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to resume fundraiser");
+    }
+  };
+
+  const handleComplete = async (fundraiserId: number) => {
+    if (!confirm("Are you sure you want to mark this fundraiser as completed? This action cannot be undone.")) {
+      return;
+    }
+    try {
+      await completeFundraiser.mutateAsync({ id: fundraiserId });
+      toast.success("Fundraiser marked as completed");
+      refetchFundraisers();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to complete fundraiser");
     }
   };
 
@@ -401,12 +438,14 @@ export default function TeamDashboard() {
                             <CardTitle>{fundraiser.title}</CardTitle>
                             <CardDescription>{fundraiser.description}</CardDescription>
                           </div>
-                          <span className={`px-3 py-1 rounded-full text-sm ${
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                             fundraiser.status === "active" ? "bg-green-100 text-green-800" :
                             fundraiser.status === "draft" ? "bg-gray-100 text-gray-800" :
-                            "bg-blue-100 text-blue-800"
+                            fundraiser.status === "paused" ? "bg-yellow-100 text-yellow-800" :
+                            fundraiser.status === "completed" ? "bg-blue-100 text-blue-800" :
+                            "bg-red-100 text-red-800"
                           }`}>
-                            {fundraiser.status}
+                            {fundraiser.status.charAt(0).toUpperCase() + fundraiser.status.slice(1)}
                           </span>
                         </div>
                       </CardHeader>
@@ -426,17 +465,46 @@ export default function TeamDashboard() {
                           </div>
                         </div>
 
-                        <div className="flex gap-2">
-                          <Button asChild variant="outline" size="sm">
-                            <Link href={`/fundraiser/${fundraiser.id}`}>View Public Page</Link>
-                          </Button>
+                        <div className="flex flex-wrap gap-2">
+                          {/* Preview button for draft fundraisers */}
+                          {fundraiser.status === "draft" && (
+                            <Button asChild variant="outline" size="sm">
+                              <Link href={`/fundraiser/${fundraiser.id}/preview`}>Preview</Link>
+                            </Button>
+                          )}
+
+                          {/* View public page for published fundraisers */}
+                          {fundraiser.status !== "draft" && (
+                            <Button asChild variant="outline" size="sm">
+                              <Link href={`/fundraiser/${fundraiser.id}`}>View Public Page</Link>
+                            </Button>
+                          )}
                           
+                          {/* Status management buttons */}
                           {fundraiser.status === "draft" && (
                             <Button onClick={() => handlePublish(fundraiser.id)} size="sm" disabled={publishFundraiser.isPending}>
                               Publish
                             </Button>
                           )}
 
+                          {fundraiser.status === "active" && (
+                            <>
+                              <Button onClick={() => handlePause(fundraiser.id)} size="sm" variant="secondary" disabled={pauseFundraiser.isPending}>
+                                Pause
+                              </Button>
+                              <Button onClick={() => handleComplete(fundraiser.id)} size="sm" variant="default" disabled={completeFundraiser.isPending}>
+                                Complete
+                              </Button>
+                            </>
+                          )}
+
+                          {fundraiser.status === "paused" && (
+                            <Button onClick={() => handleResume(fundraiser.id)} size="sm" disabled={resumeFundraiser.isPending}>
+                              Resume
+                            </Button>
+                          )}
+
+                          {/* Micro-fundraiser specific actions */}
                           {fundraiser.fundraiserType === "micro_fundraiser" && fundraiser.status === "active" && (
                             <>
                               <Button
@@ -445,14 +513,14 @@ export default function TeamDashboard() {
                                   setStatsDialogOpen(true);
                                 }}
                                 size="sm"
-                                variant="secondary"
+                                variant="outline"
                               >
                                 Enter Stats
                               </Button>
                               <Button
                                 onClick={() => handleProcessCharges(fundraiser.id)}
                                 size="sm"
-                                variant="default"
+                                variant="outline"
                                 disabled={processCharges.isPending}
                               >
                                 Process Charges
