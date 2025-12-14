@@ -13,6 +13,171 @@ import { useParams, Link, Redirect } from "wouter";
 import { useState } from "react";
 import { toast } from "sonner";
 import { getLoginUrl } from "@/const";
+import { Download } from "lucide-react";
+
+function PledgeReport({ fundraiserId }: { fundraiserId: number }) {
+  const { data: pledges } = trpc.reporting.getPledgeList.useQuery({ fundraiserId });
+  const exportCSV = trpc.reporting.exportPledgesCSV.useQuery({ fundraiserId }, { enabled: false });
+
+  const handleExport = async () => {
+    const result = await exportCSV.refetch();
+    if (result.data) {
+      const blob = new Blob([result.data.csv], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = result.data.filename;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      toast.success("CSV exported successfully!");
+    }
+  };
+
+  const formatCurrency = (cents: number) => {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Pledges</CardTitle>
+            <CardDescription>{pledges?.length || 0} total pledges</CardDescription>
+          </div>
+          <Button onClick={handleExport} variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Donor</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Base Amount</TableHead>
+              <TableHead>Cap</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Date</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {pledges && pledges.length > 0 ? (
+              pledges.map((pledge) => (
+                <TableRow key={pledge.id}>
+                  <TableCell>{pledge.donorName}</TableCell>
+                  <TableCell>{pledge.donorEmail}</TableCell>
+                  <TableCell>{formatCurrency(pledge.baseAmount)}</TableCell>
+                  <TableCell>{pledge.capAmount ? formatCurrency(pledge.capAmount) : "-"}</TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded text-xs ${
+                      pledge.status === "authorized" ? "bg-green-100 text-green-800" :
+                      pledge.status === "charged" ? "bg-blue-100 text-blue-800" :
+                      "bg-gray-100 text-gray-800"
+                    }`}>
+                      {pledge.status}
+                    </span>
+                  </TableCell>
+                  <TableCell>{new Date(pledge.createdAt).toLocaleDateString()}</TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  No pledges yet
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ChargeReport({ fundraiserId }: { fundraiserId: number }) {
+  const { data: charges } = trpc.reporting.getChargeList.useQuery({ fundraiserId });
+  const exportCSV = trpc.reporting.exportChargesCSV.useQuery({ fundraiserId }, { enabled: false });
+
+  const handleExport = async () => {
+    const result = await exportCSV.refetch();
+    if (result.data) {
+      const blob = new Blob([result.data.csv], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = result.data.filename;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      toast.success("CSV exported successfully!");
+    }
+  };
+
+  const formatCurrency = (cents: number) => {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Charges</CardTitle>
+            <CardDescription>{charges?.length || 0} total charges</CardDescription>
+          </div>
+          <Button onClick={handleExport} variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>ID</TableHead>
+              <TableHead>Gross Amount</TableHead>
+              <TableHead>Net Amount</TableHead>
+              <TableHead>Platform Fee</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Date</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {charges && charges.length > 0 ? (
+              charges.map((charge) => (
+                <TableRow key={charge.id}>
+                  <TableCell>#{charge.id}</TableCell>
+                  <TableCell>{formatCurrency(charge.grossAmount)}</TableCell>
+                  <TableCell>{formatCurrency(charge.netAmount)}</TableCell>
+                  <TableCell>{formatCurrency(charge.platformFee)}</TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded text-xs ${
+                      charge.status === "succeeded" ? "bg-green-100 text-green-800" :
+                      charge.status === "failed" ? "bg-red-100 text-red-800" :
+                      "bg-gray-100 text-gray-800"
+                    }`}>
+                      {charge.status}
+                    </span>
+                  </TableCell>
+                  <TableCell>{new Date(charge.createdAt).toLocaleDateString()}</TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  No charges yet
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function TeamDashboard() {
   const { id } = useParams<{ id: string }>();
@@ -378,16 +543,40 @@ export default function TeamDashboard() {
             </div>
           </TabsContent>
 
-          <TabsContent value="pledges">
+          <TabsContent value="pledges" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Pledge Management</CardTitle>
-                <CardDescription>View and manage all pledges for your fundraisers</CardDescription>
+                <CardTitle>Pledge & Charge Reports</CardTitle>
+                <CardDescription>View and export pledge and charge data for your fundraisers</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Pledge management features coming soon</p>
+                <div className="space-y-4">
+                  <Label htmlFor="reportFundraiser">Select Fundraiser</Label>
+                  <Select
+                    value={selectedFundraiserId?.toString() || ""}
+                    onValueChange={(v) => setSelectedFundraiserId(parseInt(v))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a fundraiser" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fundraisers?.map((f) => (
+                        <SelectItem key={f.id} value={f.id.toString()}>
+                          {f.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardContent>
             </Card>
+
+            {selectedFundraiserId && (
+              <>
+                <PledgeReport fundraiserId={selectedFundraiserId} />
+                <ChargeReport fundraiserId={selectedFundraiserId} />
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="settings">

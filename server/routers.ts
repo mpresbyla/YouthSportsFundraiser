@@ -866,6 +866,110 @@ const roleRouter = router({
     }),
 });
 
+// ============================================================================
+// Reporting Router
+// ============================================================================
+
+const reportingRouter = router({
+  getPledgeList: protectedProcedure
+    .input(z.object({ fundraiserId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const fundraiser = await db.getFundraiserById(input.fundraiserId);
+      if (!fundraiser) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      const canManage = await db.canManageTeam(ctx.user.id, fundraiser.teamId);
+      if (!canManage) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      const pledges = await db.getPledgesByFundraiser(input.fundraiserId);
+      return pledges;
+    }),
+
+  getChargeList: protectedProcedure
+    .input(z.object({ fundraiserId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const fundraiser = await db.getFundraiserById(input.fundraiserId);
+      if (!fundraiser) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      const canManage = await db.canManageTeam(ctx.user.id, fundraiser.teamId);
+      if (!canManage) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      const charges = await db.getChargesByFundraiser(input.fundraiserId);
+      return charges;
+    }),
+
+  exportPledgesCSV: protectedProcedure
+    .input(z.object({ fundraiserId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const fundraiser = await db.getFundraiserById(input.fundraiserId);
+      if (!fundraiser) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      const canManage = await db.canManageTeam(ctx.user.id, fundraiser.teamId);
+      if (!canManage) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      const pledges = await db.getPledgesByFundraiser(input.fundraiserId);
+      
+      // Generate CSV
+      const headers = ["ID", "Donor Name", "Email", "Phone", "Base Amount", "Cap Amount", "Status", "Created At"];
+      const rows = pledges.map(p => [
+        p.id.toString(),
+        p.donorName,
+        p.donorEmail,
+        p.donorPhone || "",
+        (p.baseAmount / 100).toFixed(2),
+        p.capAmount ? (p.capAmount / 100).toFixed(2) : "",
+        p.status,
+        p.createdAt.toISOString(),
+      ]);
+
+      const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
+      return { csv, filename: `pledges-${input.fundraiserId}-${Date.now()}.csv` };
+    }),
+
+  exportChargesCSV: protectedProcedure
+    .input(z.object({ fundraiserId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const fundraiser = await db.getFundraiserById(input.fundraiserId);
+      if (!fundraiser) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      const canManage = await db.canManageTeam(ctx.user.id, fundraiser.teamId);
+      if (!canManage) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      const charges = await db.getChargesByFundraiser(input.fundraiserId);
+      
+      // Generate CSV
+      const headers = ["ID", "Pledge ID", "Gross Amount", "Net Amount", "Platform Fee", "Status", "Created At", "Succeeded At"];
+      const rows = charges.map(c => [
+        c.id.toString(),
+        c.pledgeId.toString(),
+        (c.grossAmount / 100).toFixed(2),
+        (c.netAmount / 100).toFixed(2),
+        (c.platformFee / 100).toFixed(2),
+        c.status,
+        c.createdAt.toISOString(),
+        c.succeededAt?.toISOString() || "",
+      ]);
+
+      const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
+      return { csv, filename: `charges-${input.fundraiserId}-${Date.now()}.csv` };
+    }),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: authRouter,
@@ -876,6 +980,7 @@ export const appRouter = router({
   charge: chargeRouter,
   stripe: stripeRouter,
   role: roleRouter,
+  reporting: reportingRouter,
 });
 
 export type AppRouter = typeof appRouter;

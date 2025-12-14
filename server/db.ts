@@ -472,3 +472,67 @@ export async function logAudit(data: {
     console.error("[Audit] Failed to log:", error);
   }
 }
+
+
+// ============================================================================
+// Webhook Helper Functions
+// ============================================================================
+
+export async function updatePledgeStatus(pledgeId: number, status: string) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .update(pledges)
+    .set({ status: status as any })
+    .where(eq(pledges.id, pledgeId));
+}
+
+export async function getChargesByPaymentIntent(paymentIntentId: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select()
+    .from(charges)
+    .where(eq(charges.stripePaymentIntentId, paymentIntentId));
+}
+
+export async function updateChargeStatus(
+  chargeId: number,
+  data: {
+    status?: string;
+    succeededAt?: Date;
+    failedAt?: Date;
+    failureCode?: string;
+    failureMessage?: string;
+    refundAmount?: number;
+    refundedAt?: Date;
+  }
+) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .update(charges)
+    .set({
+      ...(data.status && { status: data.status as any }),
+      ...(data.succeededAt && { succeededAt: data.succeededAt }),
+      ...(data.failedAt && { failedAt: data.failedAt }),
+      ...(data.failureCode && { failureCode: data.failureCode }),
+      ...(data.failureMessage && { failureMessage: data.failureMessage }),
+      ...(data.refundAmount !== undefined && { refundAmount: data.refundAmount }),
+      ...(data.refundedAt && { refundedAt: data.refundedAt }),
+    })
+    .where(eq(charges.id, chargeId));
+}
+
+export async function getTeamsByStripeAccount(stripeAccountId: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select()
+    .from(teams)
+    .where(eq(teams.stripeAccountId, stripeAccountId));
+}
